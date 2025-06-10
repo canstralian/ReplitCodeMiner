@@ -53,5 +53,9 @@ task = "shell.exec"
 args = "echo \"✅ Documentation check completed\""
 
 [[ports]]
+localPort = 3001
+externalPort = 3001
+
+[[ports]]
 localPort = 5000
 externalPort = 80
