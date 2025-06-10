@@ -70,7 +70,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const { refresh } = req.query;
-      
+
       if (refresh === 'true') {
         if (!req.user.access_token) {
           throw new AppError('Access token not found', 401);
@@ -81,7 +81,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await storage.syncUserProjects(userId, replitProjects);
         logger.info('Projects synced successfully', { userId, count: replitProjects.length });
       }
-      
+
       const projects = await storage.getUserProjects(userId);
       logger.info('Projects fetched successfully', { userId, count: projects.length });
       res.json(projects);
@@ -131,13 +131,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Trigger analysis of specified projects
       const results = await replitApi.analyzeProjects(req.user.access_token, projectIds);
       await storage.storeAnalysisResults(userId, results);
-      
+
       logger.info('Project analysis completed', { 
         userId, 
         projectCount: projectIds.length,
         resultsCount: results.length 
       });
-      
+
       res.json({ message: "Analysis completed", results });
     } catch (error) {
       logger.error('Error analyzing projects', { 
@@ -177,16 +177,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const { groupId } = req.params;
       const groupIdNum = parseInt(groupId);
-      
+
       if (isNaN(groupIdNum)) {
         throw new AppError('Invalid group ID', 400);
       }
-      
+
       const group = await storage.getDuplicateGroup(userId, groupIdNum);
       if (!group) {
         throw new AppError('Duplicate group not found', 404);
       }
-      
+
       logger.info('Duplicate group fetched successfully', { userId, groupId: groupIdNum });
       res.json(group);
     } catch (error) {
@@ -207,20 +207,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const { query, language, patternType } = req.body;
-      
+
       logger.info('Starting code pattern search', { 
         userId, 
         query: query.slice(0, 50), 
         language, 
         patternType 
       });
-      
+
       const searchResults = await storage.searchCodePatterns(userId, {
         query,
         language,
         patternType
       });
-      
+
       // Store search history
       await storage.addSearchHistory(userId, {
         query,
@@ -228,12 +228,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         resultCount: searchResults.length,
         executionTime: Date.now() - req.startTime
       });
-      
+
       logger.info('Code pattern search completed', { 
         userId, 
         resultsCount: searchResults.length 
       });
-      
+
       res.json(searchResults);
     } catch (error) {
       logger.error('Error searching code patterns', { 
@@ -255,7 +255,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const { timeRange = '7d' } = req.query;
       const analytics = await storage.getAnalytics(userId, timeRange);
-      
+
       logger.info('Analytics fetched successfully', { userId, timeRange });
       res.json(analytics);
     } catch (error) {
@@ -276,16 +276,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const { code1, code2, context } = req.body;
-      
+
       if (!code1 || !code2) {
         throw new AppError('Both code snippets are required', 400);
       }
 
       logger.info('Starting AI similarity analysis', { userId });
-      
+
       const { aiAnalysisService } = await import('./aiAnalysis');
       const analysis = await aiAnalysisService.analyzeSemanticSimilarity(code1, code2, context);
-      
+
       // Store AI analysis result
       await storage.storeAIAnalysis(userId, {
         analysisType: 'semantic_similarity',
@@ -294,7 +294,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         confidence: analysis.similarity,
         metadata: { context }
       });
-      
+
       logger.info('AI similarity analysis completed', { userId, similarity: analysis.similarity });
       res.json(analysis);
     } catch (error) {
@@ -314,13 +314,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const { duplicateGroupId } = req.body;
-      
+
       if (!duplicateGroupId) {
         throw new AppError('Duplicate group ID is required', 400);
       }
 
       logger.info('Generating refactoring suggestions', { userId, duplicateGroupId });
-      
+
       const duplicateGroup = await storage.getDuplicateGroup(userId, duplicateGroupId);
       if (!duplicateGroup) {
         throw new AppError('Duplicate group not found', 404);
@@ -332,9 +332,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         filePath: p.filePath,
         projectName: 'Project' // You might want to join with projects table
       }));
-      
+
       const suggestions = await aiAnalysisService.generateRefactoringSuggestions(patterns);
-      
+
       // Store suggestions in database
       for (const suggestion of suggestions) {
         await storage.storeRefactoringSuggestion(userId, {
@@ -342,13 +342,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           ...suggestion
         });
       }
-      
+
       logger.info('Refactoring suggestions generated', { 
         userId, 
         duplicateGroupId, 
         suggestionsCount: suggestions.length 
       });
-      
+
       res.json(suggestions);
     } catch (error) {
       logger.error('Error generating refactoring suggestions', { 
@@ -368,16 +368,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const { code, language, filePath, projectId } = req.body;
-      
+
       if (!code || !language) {
         throw new AppError('Code and language are required', 400);
       }
 
       logger.info('Starting code quality analysis', { userId, language });
-      
+
       const { aiAnalysisService } = await import('./aiAnalysis');
       const qualityMetrics = await aiAnalysisService.analyzeCodeQuality(code, language);
-      
+
       // Store quality metrics if projectId and filePath are provided
       if (projectId && filePath) {
         await storage.storeCodeMetrics(userId, {
@@ -386,7 +386,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           ...qualityMetrics
         });
       }
-      
+
       logger.info('Code quality analysis completed', { userId, complexity: qualityMetrics.complexity });
       res.json(qualityMetrics);
     } catch (error) {
@@ -426,7 +426,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const { name, query, filters, isPublic = false } = req.body;
-      
+
       if (!name || !query) {
         throw new AppError('Name and query are required', 400);
       }
@@ -437,7 +437,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         filters,
         isPublic
       });
-      
+
       logger.info('Search saved successfully', { userId, searchName: name });
       res.json(savedSearch);
     } catch (error) {
@@ -465,6 +465,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userId: req.user?.claims?.sub 
       });
       next(error);
+    }
+  });
+
+  // Health check endpoint
+  app.get('/health', (req, res) => {
+    res.json({ status: 'healthy', timestamp: new Date().toISOString() });
+  });
+
+  // AI provider management endpoints
+  app.get('/api/ai/providers', isAuthenticated, async (req: any, res) => {
+    try {
+      const { aiAnalysisService } = await import('./aiAnalysis');
+      const providers = await aiAnalysisService.getAvailableProviders();
+      res.json({ providers });
+    } catch (error) {
+      logger.error('Failed to get AI providers', { error: (error as Error).message });
+      res.status(500).json({ error: 'Failed to get AI providers' });
+    }
+  });
+
+  app.post('/api/ai/test/:provider', isAuthenticated, async (req: any, res) => {
+    try {
+      const { aiAnalysisService } = await import('./aiAnalysis');
+      const { provider } = req.params;
+      const result = await aiAnalysisService.testProvider(provider);
+      res.json(result);
+    } catch (error) {
+      logger.error('Failed to test AI provider', { error: (error as Error).message });
+      res.status(500).json({ error: 'Failed to test AI provider' });
     }
   });
 

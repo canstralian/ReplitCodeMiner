@@ -1,4 +1,3 @@
-
 # Replit Code Analysis Platform
 
 A powerful platform for analyzing code quality, detecting duplicates, and providing refactoring suggestions across Replit projects using AI-powered insights.
@@ -215,26 +214,34 @@ Configure custom domains in the Replit deployment settings.
 - Check database service status
 - Review connection logs
 
-## 📚 Resources
+## 🤖 AI Provider Support
 
-- [Replit API Documentation](https://docs.replit.com/programming-ide/workspace-features/replit-api)
-- [React Documentation](https://react.dev/)
-- [Express.js Guide](https://expressjs.com/)
-- [TypeScript Handbook](https://www.typescriptlang.org/docs/)
+This platform supports multiple AI providers for enhanced code analysis:
+
+- **OpenAI GPT-4**: Advanced code analysis and refactoring suggestions
+- **Claude (Anthropic)**: Detailed code quality insights
+- **CodePal.ai**: Specialized coding assistant optimizations
+- **Cohere**: Command model for code understanding
+- **Google AI (Gemini)**: Multi-modal code analysis
+- **Groq**: High-speed inference for real-time analysis
+
+Configure multiple providers for redundancy and optimal performance.
+
+## 📚 Additional Resources
+
+- [Authentication Guide](./docs/auth.md)
+- [Analysis Examples](./docs/examples.md)
+- [SDK Documentation](./docs/sdks.md)
+- [AI Provider Setup](./docs/ai-providers.md)
+- [Webhook Integration](./docs/webhooks.md)
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 👥 Team
-
-- Built with ❤️ for the Replit community
-- Powered by OpenAI for intelligent code analysis
-
-## 🆔 Version
-
-Current version: 1.0.0
+This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
 
 ---
 
-**Need help?** Open an issue or contact the development team.
+**Version**: 1.0.0  
+**Last Updated**: January 2025
+
+For support, please contact `api-

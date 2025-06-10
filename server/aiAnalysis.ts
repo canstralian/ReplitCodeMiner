@@ -52,119 +52,117 @@ export interface PerformanceMetric {
   recommendation: string;
 }
 
+export interface AIProvider {
+  name: string;
+  apiKey: string;
+  baseUrl: string;
+  model: string;
+  maxTokens: number;
+}
+
 export class AIAnalysisService {
-  private readonly apiKey: string;
-  private readonly baseUrl: string;
+  private readonly providers: Map<string, AIProvider>;
+  private readonly defaultProvider: string;
 
   constructor() {
-    this.apiKey = config.openai?.apiKey || process.env.OPENAI_API_KEY || '';
-    this.baseUrl = 'https://api.openai.com/v1';
+    this.providers = new Map();
+    this.defaultProvider = config.ai.defaultProvider;
     
-    if (!this.apiKey) {
-      logger.warn('OpenAI API key not configured. AI analysis features will be limited.');
+    // Initialize providers
+    Object.entries(config.ai.providers).forEach(([name, config]) => {
+      if (config.apiKey) {
+        this.providers.set(name, {
+          name,
+          apiKey: config.apiKey,
+          baseUrl: config.baseUrl,
+          model: config.model,
+          maxTokens: config.maxTokens
+        });
+      }
+    });
+    
+    if (this.providers.size === 0) {
+      logger.warn('No AI providers configured. AI analysis features will be limited.');
+    } else {
+      logger.info(`Initialized ${this.providers.size} AI provider(s): ${Array.from(this.providers.keys()).join(', ')}`);
     }
   }
 
   async analyzeSemanticSimilarity(
     code1: string, 
     code2: string, 
-    context?: { language: string; patternType: string }
+    context?: { language: string; patternType: string; provider?: string }
   ): Promise<SemanticAnalysisResult> {
-    if (!this.apiKey) {
+    const provider = this.getProvider(context?.provider);
+    
+    if (!provider) {
       return this.getFallbackAnalysis(code1, code2);
     }
 
     const prompt = this.buildSemanticAnalysisPrompt(code1, code2, context);
     
     try {
-      const response = await fetch(`${this.baseUrl}/chat/completions`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${this.apiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'gpt-4',
-          messages: [
-            {
-              role: 'system',
-              content: 'You are an expert code analyst. Analyze code similarity and provide refactoring suggestions in JSON format.'
-            },
-            {
-              role: 'user',
-              content: prompt
-            }
-          ],
-          max_tokens: 2000,
-          temperature: 0.3,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`OpenAI API error: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      const aiResponse = data.choices[0]?.message?.content;
-      
-      if (!aiResponse) {
-        throw new Error('No response from AI service');
-      }
-
-      return this.parseAIResponse(aiResponse);
+      const response = await this.callAIProvider(provider, prompt, 'code analysis');
+      return this.parseAIResponse(response);
     } catch (error) {
-      logger.error('AI analysis failed', { error: (error as Error).message });
+      logger.error('AI analysis failed', { 
+        error: (error as Error).message, 
+        provider: provider.name 
+      });
+      
+      // Try fallback provider if current one fails
+      const fallbackProvider = this.getFallbackProvider(provider.name);
+      if (fallbackProvider) {
+        try {
+          const response = await this.callAIProvider(fallbackProvider, prompt, 'code analysis');
+          return this.parseAIResponse(response);
+        } catch (fallbackError) {
+          logger.error('Fallback AI analysis also failed', { 
+            error: (fallbackError as Error).message,
+            fallbackProvider: fallbackProvider.name
+          });
+        }
+      }
+      
       return this.getFallbackAnalysis(code1, code2);
     }
   }
 
   async generateRefactoringSuggestions(
-    duplicatePatterns: Array<{ code: string; filePath: string; projectName: string }>
+    duplicatePatterns: Array<{ code: string; filePath: string; projectName: string }>,
+    options?: { provider?: string }
   ): Promise<RefactoringSuggestion[]> {
-    if (!this.apiKey) {
+    const provider = this.getProvider(options?.provider);
+    
+    if (!provider) {
       return this.getFallbackRefactoringSuggestions(duplicatePatterns);
     }
 
     const prompt = this.buildRefactoringPrompt(duplicatePatterns);
     
     try {
-      const response = await fetch(`${this.baseUrl}/chat/completions`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${this.apiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'gpt-4',
-          messages: [
-            {
-              role: 'system',
-              content: 'You are an expert software engineer. Analyze duplicate code patterns and suggest specific refactoring improvements.'
-            },
-            {
-              role: 'user',
-              content: prompt
-            }
-          ],
-          max_tokens: 3000,
-          temperature: 0.2,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`OpenAI API error: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      const aiResponse = data.choices[0]?.message?.content;
-      
-      if (!aiResponse) {
-        throw new Error('No response from AI service');
-      }
-
-      return this.parseRefactoringSuggestions(aiResponse);
+      const response = await this.callAIProvider(provider, prompt, 'refactoring analysis');
+      return this.parseRefactoringSuggestions(response);
     } catch (error) {
-      logger.error('Refactoring suggestion generation failed', { error: (error as Error).message });
+      logger.error('Refactoring suggestion generation failed', { 
+        error: (error as Error).message,
+        provider: provider.name
+      });
+      
+      // Try fallback provider
+      const fallbackProvider = this.getFallbackProvider(provider.name);
+      if (fallbackProvider) {
+        try {
+          const response = await this.callAIProvider(fallbackProvider, prompt, 'refactoring analysis');
+          return this.parseRefactoringSuggestions(response);
+        } catch (fallbackError) {
+          logger.error('Fallback refactoring analysis also failed', { 
+            error: (fallbackError as Error).message,
+            fallbackProvider: fallbackProvider.name
+          });
+        }
+      }
+      
       return this.getFallbackRefactoringSuggestions(duplicatePatterns);
     }
   }
@@ -504,6 +502,153 @@ Please provide specific refactoring suggestions in JSON format:
       securityIssues: [],
       performance: []
     };
+  }
+
+  private getProvider(providerName?: string): AIProvider | null {
+    const name = providerName || this.defaultProvider;
+    return this.providers.get(name) || this.providers.values().next().value || null;
+  }
+
+  private getFallbackProvider(currentProvider: string): AIProvider | null {
+    const available = Array.from(this.providers.values()).filter(p => p.name !== currentProvider);
+    return available[0] || null;
+  }
+
+  private async callAIProvider(provider: AIProvider, prompt: string, systemMessage: string): Promise<string> {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+
+    let requestBody: any;
+    let url: string;
+
+    switch (provider.name) {
+      case 'openai':
+      case 'groq':
+        headers['Authorization'] = `Bearer ${provider.apiKey}`;
+        url = `${provider.baseUrl}/chat/completions`;
+        requestBody = {
+          model: provider.model,
+          messages: [
+            { role: 'system', content: `You are an expert code analyst. ${systemMessage}` },
+            { role: 'user', content: prompt }
+          ],
+          max_tokens: provider.maxTokens,
+          temperature: 0.3,
+        };
+        break;
+
+      case 'claude':
+        headers['x-api-key'] = provider.apiKey;
+        headers['anthropic-version'] = '2023-06-01';
+        url = `${provider.baseUrl}/v1/messages`;
+        requestBody = {
+          model: provider.model,
+          max_tokens: provider.maxTokens,
+          messages: [
+            { role: 'user', content: `${systemMessage}\n\n${prompt}` }
+          ],
+          temperature: 0.3,
+        };
+        break;
+
+      case 'cohere':
+        headers['Authorization'] = `Bearer ${provider.apiKey}`;
+        url = `${provider.baseUrl}/generate`;
+        requestBody = {
+          model: provider.model,
+          prompt: `${systemMessage}\n\n${prompt}`,
+          max_tokens: provider.maxTokens,
+          temperature: 0.3,
+        };
+        break;
+
+      case 'google':
+        url = `${provider.baseUrl}/models/${provider.model}:generateContent?key=${provider.apiKey}`;
+        requestBody = {
+          contents: [{
+            parts: [{
+              text: `${systemMessage}\n\n${prompt}`
+            }]
+          }],
+          generationConfig: {
+            maxOutputTokens: provider.maxTokens,
+            temperature: 0.3,
+          }
+        };
+        break;
+
+      case 'codepal':
+        headers['Authorization'] = `Bearer ${provider.apiKey}`;
+        url = `${provider.baseUrl}/analyze`;
+        requestBody = {
+          model: provider.model,
+          prompt,
+          system_message: systemMessage,
+          max_tokens: provider.maxTokens,
+          temperature: 0.3,
+        };
+        break;
+
+      default:
+        throw new Error(`Unsupported AI provider: ${provider.name}`);
+    }
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(requestBody),
+    });
+
+    if (!response.ok) {
+      throw new Error(`${provider.name} API error: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return this.extractResponse(data, provider.name);
+  }
+
+  private extractResponse(data: any, providerName: string): string {
+    switch (providerName) {
+      case 'openai':
+      case 'groq':
+        return data.choices[0]?.message?.content || '';
+
+      case 'claude':
+        return data.content[0]?.text || '';
+
+      case 'cohere':
+        return data.generations[0]?.text || '';
+
+      case 'google':
+        return data.candidates[0]?.content?.parts[0]?.text || '';
+
+      case 'codepal':
+        return data.response || data.analysis || '';
+
+      default:
+        throw new Error(`Unknown response format for provider: ${providerName}`);
+    }
+  }
+
+  // Public method to get available providers
+  public getAvailableProviders(): string[] {
+    return Array.from(this.providers.keys());
+  }
+
+  // Public method to test provider connectivity
+  public async testProvider(providerName: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      const provider = this.getProvider(providerName);
+      if (!provider) {
+        return { success: false, error: 'Provider not configured' };
+      }
+
+      await this.callAIProvider(provider, 'Test prompt', 'Respond with "OK"');
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: (error as Error).message };
+    }
   }
 }
 
