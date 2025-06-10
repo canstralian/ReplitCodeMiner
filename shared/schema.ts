@@ -7,7 +7,8 @@ import {
   index,
   serial,
   integer,
-  boolean
+  boolean,
+  decimal
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -32,6 +33,15 @@ export const users = pgTable("users", {
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
+  stripeCustomerId: varchar("stripe_customer_id"),
+  stripeSubscriptionId: varchar("stripe_subscription_id"),
+  subscriptionStatus: varchar("subscription_status").default("trial"), // trial, active, canceled, expired
+  subscriptionTier: varchar("subscription_tier").default("free"), // free, pro, enterprise
+  trialEndsAt: timestamp("trial_ends_at"),
+  subscriptionCurrentPeriodEnd: timestamp("subscription_current_period_end"),
+  projectAnalysisLimit: integer("project_analysis_limit").default(5), // free tier limit
+  monthlyAnalysisCount: integer("monthly_analysis_count").default(0),
+  lastBillingReset: timestamp("last_billing_reset").defaultNow(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
