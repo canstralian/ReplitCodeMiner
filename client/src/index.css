@@ -1,0 +1,121 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: hsl(0, 0%, 100%);
+  --foreground: hsl(20, 14.3%, 4.1%);
+  --muted: hsl(60, 4.8%, 95.9%);
+  --muted-foreground: hsl(25, 5.3%, 44.7%);
+  --popover: hsl(0, 0%, 100%);
+  --popover-foreground: hsl(20, 14.3%, 4.1%);
+  --card: hsl(0, 0%, 100%);
+  --card-foreground: hsl(20, 14.3%, 4.1%);
+  --border: hsl(20, 5.9%, 90%);
+  --input: hsl(20, 5.9%, 90%);
+  --primary: hsl(207, 90%, 54%);
+  --primary-foreground: hsl(211, 100%, 99%);
+  --secondary: hsl(60, 4.8%, 95.9%);
+  --secondary-foreground: hsl(24, 9.8%, 10%);
+  --accent: hsl(60, 4.8%, 95.9%);
+  --accent-foreground: hsl(24, 9.8%, 10%);
+  --destructive: hsl(0, 84.2%, 60.2%);
+  --destructive-foreground: hsl(60, 9.1%, 97.8%);
+  --ring: hsl(20, 14.3%, 4.1%);
+  --radius: 0.5rem;
+
+  /* Replit Theme Colors */
+  --replit-orange: hsl(18, 94%, 49%);
+  --navy-dark: hsl(220, 39%, 11%);
+  --editor-dark: hsl(218, 23%, 17%);
+  --accent-blue: hsl(200, 100%, 67%);
+  --success-green: hsl(145, 100%, 41%);
+}
+
+.dark {
+  --background: hsl(218, 23%, 17%);
+  --foreground: hsl(0, 0%, 98%);
+  --muted: hsl(220, 39%, 11%);
+  --muted-foreground: hsl(240, 5%, 64.9%);
+  --popover: hsl(218, 23%, 17%);
+  --popover-foreground: hsl(0, 0%, 98%);
+  --card: hsl(220, 39%, 11%);
+  --card-foreground: hsl(0, 0%, 98%);
+  --border: hsl(240, 3.7%, 15.9%);
+  --input: hsl(240, 3.7%, 15.9%);
+  --primary: hsl(18, 94%, 49%);
+  --primary-foreground: hsl(0, 0%, 98%);
+  --secondary: hsl(220, 39%, 11%);
+  --secondary-foreground: hsl(0, 0%, 98%);
+  --accent: hsl(220, 39%, 11%);
+  --accent-foreground: hsl(0, 0%, 98%);
+  --destructive: hsl(0, 62.8%, 30.6%);
+  --destructive-foreground: hsl(0, 0%, 98%);
+  --ring: hsl(240, 4.9%, 83.9%);
+  --radius: 0.5rem;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+    font-family: 'Inter', sans-serif;
+  }
+  
+  .font-jetbrains {
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  }
+}
+
+@layer utilities {
+  .bg-replit-orange {
+    background-color: var(--replit-orange);
+  }
+  
+  .text-replit-orange {
+    color: var(--replit-orange);
+  }
+  
+  .bg-navy-dark {
+    background-color: var(--navy-dark);
+  }
+  
+  .bg-editor-dark {
+    background-color: var(--editor-dark);
+  }
+  
+  .text-accent-blue {
+    color: var(--accent-blue);
+  }
+  
+  .bg-accent-blue {
+    background-color: var(--accent-blue);
+  }
+  
+  .text-success-green {
+    color: var(--success-green);
+  }
+  
+  .bg-success-green {
+    background-color: var(--success-green);
+  }
+  
+  .border-replit-orange {
+    border-color: var(--replit-orange);
+  }
+  
+  .hover\:bg-replit-orange:hover {
+    background-color: var(--replit-orange);
+  }
+  
+  .hover\:border-replit-orange:hover {
+    border-color: var(--replit-orange);
+  }
+  
+  .focus\:ring-replit-orange:focus {
+    --tw-ring-color: var(--replit-orange);
+  }
+}
