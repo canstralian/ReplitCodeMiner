@@ -30,7 +30,7 @@ JWT_SECRET=your_jwt_secret_here
 SESSION_SECRET=your_session_secret_here
 
 # Optional
-OPENAI_API_KEY=your_openai_api_key
+OPENAI_API_KEY=your_actual_openai_api_key
 NODE_ENV=production
 PORT=5000
 
@@ -119,7 +119,7 @@ SESSION_SECRET=your-session-secret-key
 # API Keys
 REPLIT_CLIENT_ID=your_replit_oauth_client_id
 REPLIT_CLIENT_SECRET=your_replit_oauth_client_secret
-OPENAI_API_KEY=sk-your-openai-api-key
+OPENAI_API_KEY=sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 # Database
 DATABASE_URL=postgresql://username:password@host:port/database
