@@ -48,26 +48,25 @@ function updateUserSession(
   user: any,
   tokens: client.TokenEndpointResponse & client.TokenEndpointResponseHelpers
 ) {
-  user.claims = tokens.claims();
   user.access_token = tokens.access_token;
-  user.refresh_token = tokens.refresh_token;
-  user.expires_at = user.claims?.exp;
+  user.claims = tokens.claims;
+  user.id = tokens.claims().sub;
 }
 
 async function upsertUser(
-  claims: any,
-) {
-  await storage.upsertUser({
-    id: claims["sub"],
-    email: claims["email"],
-    firstName: claims["first_name"],
-    lastName: claims["last_name"],
-    profileImageUrl: claims["profile_image_url"],
-  });
-}
+  claims: client.IdTokenClaims
+): Promise<any> {
+  const userData = {
+    id: claims.sub,
+    email: claims.email || "",
+    username: claims.preferred_username || claims.email?.split('@')[0] || "",
+    displayName: claims.name || claims.preferred_username || "Unknown"
+  };
+
+  return await storage.upsertUser(userData);
+} 
 
 export async function setupAuth(app: Express) {
-  app.set("trust proxy", 1);
   app.use(getSession());
   app.use(passport.initialize());
   app.use(passport.session());
@@ -76,7 +75,7 @@ export async function setupAuth(app: Express) {
 
   const verify: VerifyFunction = async (
     tokens: client.TokenEndpointResponse & client.TokenEndpointResponseHelpers,
-    verified: passport.AuthenticateCallback
+    verified
   ) => {
     const user = {};
     updateUserSession(user, tokens);
@@ -86,10 +85,6 @@ export async function setupAuth(app: Express) {
 
   const domains = process.env.REPLIT_DOMAINS!.split(",");
   const primaryDomain = domains[0].trim();
-  
-  // Sanitize domain for callback URL to prevent path-to-regexp errors
-  const sanitizedDomain = primaryDomain.replace(/[^a-zA-Z0-9.-]/g, '');
-  const callbackURL = `https://${sanitizedDomain}/api/callback`;
 
   // Use a single strategy with a clean name
   const strategy = new Strategy(
@@ -97,7 +92,7 @@ export async function setupAuth(app: Express) {
       name: "replit-oidc",
       config,
       scope: "openid email profile offline_access",
-      callbackURL,
+      callbackURL: `https://${primaryDomain}/api/callback`,
     },
     verify,
   );
@@ -133,34 +128,8 @@ export async function setupAuth(app: Express) {
 }
 
 export const isAuthenticated: RequestHandler = (req, res, next) => {
-  const user = req.user as any;
-
-  if (!req.isAuthenticated() || !user?.expires_at) {
-    res.status(401).json({ message: "Unauthorized" });
-    return;
+  if (req.isAuthenticated()) {
+    return next();
   }
-
-  const now = Math.floor(Date.now() / 1000);
-  if (now <= user.expires_at) {
-    next();
-    return;
-  }
-
-  const refreshToken = user.refresh_token;
-  if (!refreshToken) {
-    res.status(401).json({ message: "Unauthorized" });
-    return;
-  }
-
-  // Handle token refresh asynchronously
-  (async () => {
-    try {
-      const config = await getOidcConfig();
-      const tokenResponse = await client.refreshTokenGrant(config, refreshToken);
-      updateUserSession(user, tokenResponse);
-      next();
-    } catch (error) {
-      res.status(401).json({ message: "Unauthorized" });
-    }
-  })();
+  res.status(401).json({ message: "Authentication required" });
 };
