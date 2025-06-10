@@ -84,32 +84,38 @@ export async function setupAuth(app: Express) {
     verified(null, user);
   };
 
-  for (const domain of process.env
-    .REPLIT_DOMAINS!.split(",")) {
-    const strategy = new Strategy(
-      {
-        name: `replitauth:${domain}`,
-        config,
-        scope: "openid email profile offline_access",
-        callbackURL: `https://${domain}/api/callback`,
-      },
-      verify,
-    );
-    passport.use(strategy);
+  const domains = process.env.REPLIT_DOMAINS!.split(",");
+  
+  for (const domain of domains) {
+    const cleanDomain = domain.trim();
+    if (cleanDomain) {
+      const strategy = new Strategy(
+        {
+          name: `replitauth:${cleanDomain}`,
+          config,
+          scope: "openid email profile offline_access",
+          callbackURL: `https://${cleanDomain}/api/callback`,
+        },
+        verify,
+      );
+      passport.use(strategy);
+    }
   }
 
   passport.serializeUser((user: Express.User, cb) => cb(null, user));
   passport.deserializeUser((user: Express.User, cb) => cb(null, user));
 
   app.get("/api/login", (req, res, next) => {
-    passport.authenticate(`replitauth:${req.hostname}`, {
+    const domain = req.hostname || process.env.REPLIT_DOMAINS?.split(',')[0] || 'localhost';
+    passport.authenticate(`replitauth:${domain}`, {
       prompt: "login consent",
       scope: ["openid", "email", "profile", "offline_access"],
     })(req, res, next);
   });
 
   app.get("/api/callback", (req, res, next) => {
-    passport.authenticate(`replitauth:${req.hostname}`, {
+    const domain = req.hostname || process.env.REPLIT_DOMAINS?.split(',')[0] || 'localhost';
+    passport.authenticate(`replitauth:${domain}`, {
       successReturnToOrRedirect: "/",
       failureRedirect: "/api/login",
     })(req, res, next);
@@ -131,12 +137,14 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
   const user = req.user as any;
 
   if (!req.isAuthenticated() || !user.expires_at) {
-    return res.status(401).json({ message: "Unauthorized" });
+    res.status(401).json({ message: "Unauthorized" });
+    return;
   }
 
   const now = Math.floor(Date.now() / 1000);
   if (now <= user.expires_at) {
-    return next();
+    next();
+    return;
   }
 
   const refreshToken = user.refresh_token;
@@ -149,9 +157,8 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
     const config = await getOidcConfig();
     const tokenResponse = await client.refreshTokenGrant(config, refreshToken);
     updateUserSession(user, tokenResponse);
-    return next();
+    next();
   } catch (error) {
     res.status(401).json({ message: "Unauthorized" });
-    return;
   }
 };
