@@ -31,6 +31,27 @@ task = "shell.exec"
 args = "npm run dev"
 waitForPort = 5000
 
+[[workflows.workflow]]
+name = "Documentation Check"
+author = 25868489
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"📚 Checking documentation completeness...\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm run lint"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm run format:check"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"✅ Documentation check completed\""
+
 [[ports]]
 localPort = 5000
 externalPort = 80
