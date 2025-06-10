@@ -59,7 +59,13 @@ export const projects = pgTable("projects", {
   lastUpdated: timestamp("last_updated"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => ({
+  userIdIdx: index("projects_user_id_idx").on(table.userId),
+  replitIdIdx: index("projects_replit_id_idx").on(table.replitId),
+  languageIdx: index("projects_language_idx").on(table.language),
+  userReplitIdx: index("projects_user_replit_idx").on(table.userId, table.replitId),
+  lastUpdatedIdx: index("projects_last_updated_idx").on(table.lastUpdated),
+}));
 
 // Code patterns and duplicates detection results
 export const codePatterns = pgTable("code_patterns", {
@@ -73,7 +79,14 @@ export const codePatterns = pgTable("code_patterns", {
   lineStart: integer("line_start"),
   lineEnd: integer("line_end"),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => ({
+  userIdIdx: index("code_patterns_user_id_idx").on(table.userId),
+  projectIdIdx: index("code_patterns_project_id_idx").on(table.projectId),
+  patternHashIdx: index("code_patterns_hash_idx").on(table.patternHash),
+  patternTypeIdx: index("code_patterns_type_idx").on(table.patternType),
+  userProjectIdx: index("code_patterns_user_project_idx").on(table.userId, table.projectId),
+  createdAtIdx: index("code_patterns_created_at_idx").on(table.createdAt),
+}));
 
 // Duplicate groups for similar code patterns
 export const duplicateGroups = pgTable("duplicate_groups", {
@@ -84,14 +97,23 @@ export const duplicateGroups = pgTable("duplicate_groups", {
   patternType: varchar("pattern_type"),
   description: text("description"),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => ({
+  userIdIdx: index("duplicate_groups_user_id_idx").on(table.userId),
+  groupHashIdx: index("duplicate_groups_hash_idx").on(table.groupHash),
+  patternTypeIdx: index("duplicate_groups_type_idx").on(table.patternType),
+  createdAtIdx: index("duplicate_groups_created_at_idx").on(table.createdAt),
+}));
 
 // Link patterns to duplicate groups
 export const patternGroups = pgTable("pattern_groups", {
   id: serial("id").primaryKey(),
   groupId: integer("group_id").notNull().references(() => duplicateGroups.id),
   patternId: integer("pattern_id").notNull().references(() => codePatterns.id),
-});
+}, (table) => ({
+  groupIdIdx: index("pattern_groups_group_id_idx").on(table.groupId),
+  patternIdIdx: index("pattern_groups_pattern_id_idx").on(table.patternId),
+  groupPatternIdx: index("pattern_groups_group_pattern_idx").on(table.groupId, table.patternId),
+}));
 
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;

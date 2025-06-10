@@ -164,9 +164,9 @@ export class DatabaseStorage implements IStorage {
       });
 
       return {
-        totalProjects: projectCount.count,
-        duplicatesFound: duplicateCount.count,
-        similarPatterns: patternCount.count,
+        totalProjects: projectCount?.count || 0,
+        duplicatesFound: duplicateCount?.count || 0,
+        similarPatterns: patternCount?.count || 0,
         languages,
       };
     } catch (error) {
@@ -268,22 +268,23 @@ export class DatabaseStorage implements IStorage {
     language?: string;
     patternType?: string;
   }): Promise<CodePattern[]> {
-    let query = db
-      .select()
-      .from(codePatterns)
-      .where(eq(codePatterns.userId, userId));
+    const conditions = [eq(codePatterns.userId, userId)];
 
     if (options.patternType) {
-      query = query.where(eq(codePatterns.patternType, options.patternType));
+      conditions.push(eq(codePatterns.patternType, options.patternType));
     }
 
     if (options.query) {
-      query = query.where(
+      conditions.push(
         sql`${codePatterns.codeSnippet} ILIKE ${`%${options.query}%`}`
       );
     }
 
-    return await query.orderBy(desc(codePatterns.createdAt));
+    return await db
+      .select()
+      .from(codePatterns)
+      .where(and(...conditions))
+      .orderBy(desc(codePatterns.createdAt));
   }
 }
 
