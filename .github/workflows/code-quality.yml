@@ -31,15 +31,18 @@ jobs:
     - name: Run comprehensive quality check
       run: npm run quality:check
       
-    - name: Generate complexity report
+    - name: Check unused dependencies
+      run: npm run deps:check
+      
+    - name: Generate complexity reports
       run: |
-        npx madge --circular --extensions ts,tsx,js,jsx ./client/src ./server > complexity-report.txt || true
-        npx madge --image dependency-graph.svg --extensions ts,tsx,js,jsx ./client/src ./server || true
+        npm run complexity || true
+        npm run complexity:graph || true
         
-    - name: Check bundle size
+    - name: Analyze bundle size
       run: |
         npm run build
-        npx bundlesize
+        npm run bundle:analyze || true
         
     - name: Detect secrets
       uses: trufflesecurity/trufflehog@main
@@ -55,20 +58,55 @@ jobs:
         script: |
           const fs = require('fs');
           try {
+            // ESLint Report
             const eslintReport = JSON.parse(fs.readFileSync('eslint-report.json', 'utf8'));
             const totalErrors = eslintReport.reduce((sum, file) => sum + file.errorCount, 0);
             const totalWarnings = eslintReport.reduce((sum, file) => sum + file.warningCount, 0);
             
-            const comment = `## 📊 Code Quality Report
+            // Dependency Report
+            let unusedDeps = 0;
+            try {
+              const depReport = JSON.parse(fs.readFileSync('dependency-report.json', 'utf8'));
+              unusedDeps = Object.keys(depReport.dependencies || {}).length;
+            } catch (e) { /* ignore */ }
             
-            ### ESLint Results
-            - **Errors:** ${totalErrors}
-            - **Warnings:** ${totalWarnings}
+            // Complexity Report
+            let circularDeps = 0;
+            try {
+              const complexityReport = JSON.parse(fs.readFileSync('complexity-report.json', 'utf8'));
+              circularDeps = Array.isArray(complexityReport) ? complexityReport.length : 0;
+            } catch (e) { /* ignore */ }
             
-            ### Files Analyzed
-            - **Total:** ${eslintReport.length}
+            // Security Report
+            let vulnerabilities = 0;
+            try {
+              const secReport = JSON.parse(fs.readFileSync('security-report.json', 'utf8'));
+              vulnerabilities = secReport.metadata?.vulnerabilities?.total || 0;
+            } catch (e) { /* ignore */ }
             
-            ${totalErrors > 0 ? '❌ Please fix the errors before merging.' : '✅ No errors found!'}
+            const comment = `## 📊 Comprehensive Code Quality Report
+            
+            ### 🔍 Static Analysis
+            - **ESLint Errors:** ${totalErrors}
+            - **ESLint Warnings:** ${totalWarnings}
+            - **Files Analyzed:** ${eslintReport.length}
+            
+            ### 📦 Dependencies
+            - **Unused Dependencies:** ${unusedDeps}
+            - **Circular Dependencies:** ${circularDeps}
+            
+            ### 🔒 Security
+            - **Vulnerabilities:** ${vulnerabilities}
+            
+            ### 📈 Status
+            ${totalErrors > 0 ? '❌ Fix ESLint errors before merging' : 
+              unusedDeps > 5 ? '⚠️ Consider cleaning up unused dependencies' :
+              circularDeps > 0 ? '⚠️ Circular dependencies detected' :
+              vulnerabilities > 0 ? '⚠️ Security vulnerabilities found' :
+              '✅ All quality checks passed!'}
+            
+            ---
+            📁 **Artifacts:** Check the workflow artifacts for detailed reports and dependency graph visualization.
             `;
             
             github.rest.issues.createComment({

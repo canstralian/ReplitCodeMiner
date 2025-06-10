@@ -1,0 +1,117 @@
+
+name: Scheduled Maintenance
+
+on:
+  schedule:
+    - cron: '0 6 * * 1'  # Every Monday at 6 AM
+  workflow_dispatch:     # Allow manual trigger
+
+jobs:
+  dependency-maintenance:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Check for dependency updates
+      run: |
+        npm run deps:update --dry-run > dependency-updates.txt
+        echo "## 📦 Available Dependency Updates" >> maintenance-report.md
+        echo "\`\`\`" >> maintenance-report.md
+        cat dependency-updates.txt >> maintenance-report.md
+        echo "\`\`\`" >> maintenance-report.md
+        
+    - name: Check for unused dependencies
+      run: |
+        npm run deps:check > unused-deps.txt
+        echo "## 🧹 Unused Dependencies" >> maintenance-report.md
+        echo "\`\`\`" >> maintenance-report.md
+        cat unused-deps.txt >> maintenance-report.md
+        echo "\`\`\`" >> maintenance-report.md
+        
+    - name: Analyze complexity trends
+      run: |
+        npm run complexity > complexity-current.txt
+        echo "## 🔄 Current Complexity Analysis" >> maintenance-report.md
+        echo "\`\`\`" >> maintenance-report.md
+        cat complexity-current.txt >> maintenance-report.md
+        echo "\`\`\`" >> maintenance-report.md
+        
+    - name: Generate dependency graph
+      run: npm run complexity:graph
+      
+    - name: Security audit
+      run: |
+        npm audit --audit-level=low --json > security-audit.json || true
+        echo "## 🔒 Security Audit Summary" >> maintenance-report.md
+        node -e "
+          const audit = JSON.parse(require('fs').readFileSync('security-audit.json', 'utf8'));
+          const total = audit.metadata?.vulnerabilities?.total || 0;
+          console.log('Total vulnerabilities:', total);
+          if (total > 0) {
+            console.log('Run \`npm audit fix\` to resolve automatically fixable issues.');
+          }
+        " >> maintenance-report.md
+        
+    - name: Create maintenance issue
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+          const title = `🔧 Weekly Maintenance Report - ${new Date().toISOString().split('T')[0]}`;
+          
+          let body = '# Weekly Maintenance Report\n\n';
+          try {
+            body += fs.readFileSync('maintenance-report.md', 'utf8');
+          } catch (e) {
+            body += 'Maintenance report generation failed. Check workflow logs.';
+          }
+          
+          body += '\n\n---\n*This issue was automatically created by the maintenance workflow.*';
+          
+          // Check if a maintenance issue already exists for this week
+          const { data: issues } = await github.rest.issues.listForRepo({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            labels: ['maintenance'],
+            state: 'open'
+          });
+          
+          const weeklyIssue = issues.find(issue => 
+            issue.title.includes(new Date().toISOString().split('T')[0].slice(0, 7))
+          );
+          
+          if (!weeklyIssue) {
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title,
+              body,
+              labels: ['maintenance', 'automated']
+            });
+          }
+          
+    - name: Upload maintenance artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: maintenance-reports
+        path: |
+          dependency-updates.txt
+          unused-deps.txt
+          complexity-current.txt
+          dependency-graph.svg
+          security-audit.json
+          maintenance-report.md
+        retention-days: 30

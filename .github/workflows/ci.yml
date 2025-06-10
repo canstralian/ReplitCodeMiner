@@ -46,6 +46,15 @@ jobs:
     - name: Code quality analysis
       run: npm run quality:check
       
+    - name: Check dependencies
+      run: npm run deps:check
+      
+    - name: Analyze complexity
+      run: npm run complexity
+      
+    - name: Generate dependency graph
+      run: npm run complexity:graph
+      
     - name: Security audit
       run: npm audit --audit-level=moderate
       
@@ -63,6 +72,24 @@ jobs:
       with:
         name: security-report-${{ matrix.node-version }}
         path: security-report.json
+        retention-days: 30
+        
+    - name: Upload dependency report
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: dependency-report-${{ matrix.node-version }}
+        path: dependency-report.json
+        retention-days: 30
+        
+    - name: Upload complexity reports
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: complexity-reports-${{ matrix.node-version }}
+        path: |
+          complexity-report.json
+          dependency-graph.svg
         retention-days: 30
 
   dependency-review:
