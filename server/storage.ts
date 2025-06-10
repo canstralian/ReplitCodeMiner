@@ -14,8 +14,9 @@ import {
   type InsertDuplicateGroup
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, desc, count, sql } from "drizzle-orm";
+import { eq, and, desc, count, sql, like, or } from "drizzle-orm";
 import type { ReplitProject, AnalysisResult } from "./replitApi";
+import { logger, AppError } from "./logger";
 
 export interface IStorage {
   // User operations (required for Replit Auth)
@@ -77,31 +78,50 @@ export class DatabaseStorage implements IStorage {
   }
 
   async syncUserProjects(userId: string, replitProjects: ReplitProject[]): Promise<void> {
-    for (const replitProject of replitProjects) {
-      await db
-        .insert(projects)
-        .values({
-          userId,
-          replitId: replitProject.id,
-          title: replitProject.title,
-          url: replitProject.url,
-          language: replitProject.language,
-          description: replitProject.description,
-          fileCount: replitProject.fileCount || 0,
-          lastUpdated: replitProject.lastUpdated || new Date(),
-        })
-        .onConflictDoUpdate({
-          target: [projects.userId, projects.replitId],
-          set: {
-            title: replitProject.title,
-            url: replitProject.url,
-            language: replitProject.language,
-            description: replitProject.description,
-            fileCount: replitProject.fileCount || 0,
-            lastUpdated: replitProject.lastUpdated || new Date(),
-            updatedAt: new Date(),
-          },
+    if (replitProjects.length === 0) return;
+
+    // Batch insert for better performance
+    const batchSize = 50;
+    for (let i = 0; i < replitProjects.length; i += batchSize) {
+      const batch = replitProjects.slice(i, i + batchSize);
+      
+      try {
+        await db.transaction(async (tx) => {
+          for (const replitProject of batch) {
+            await tx
+              .insert(projects)
+              .values({
+                userId,
+                replitId: replitProject.id,
+                title: replitProject.title,
+                url: replitProject.url,
+                language: replitProject.language,
+                description: replitProject.description,
+                fileCount: replitProject.fileCount || 0,
+                lastUpdated: replitProject.lastUpdated || new Date(),
+              })
+              .onConflictDoUpdate({
+                target: [projects.userId, projects.replitId],
+                set: {
+                  title: replitProject.title,
+                  url: replitProject.url,
+                  language: replitProject.language,
+                  description: replitProject.description,
+                  fileCount: replitProject.fileCount || 0,
+                  lastUpdated: replitProject.lastUpdated || new Date(),
+                  updatedAt: new Date(),
+                },
+              });
+          }
         });
+      } catch (error) {
+        logger.error('Error syncing project batch', { 
+          error: (error as Error).message, 
+          userId, 
+          batchStart: i 
+        });
+        throw new AppError('Failed to sync projects', 500);
+      }
     }
   }
 
@@ -111,51 +131,48 @@ export class DatabaseStorage implements IStorage {
     similarPatterns: number;
     languages: Record<string, number>;
   }> {
-    const [projectCount] = await db
-      .select({ count: count() })
-      .from(projects)
-      .where(eq(projects.userId, userId));
+    try {
+      const [projectCount] = await db
+        .select({ count: count() })
+        .from(projects)
+        .where(eq(projects.userId, userId));
 
-    const [duplicateCount] = await db
-      .select({ count: count() })
-      .from(duplicateGroups)
-      .where(eq(duplicateGroups.userId, userId));
+      const [duplicateCount] = await db
+        .select({ count: count() })
+        .from(duplicateGroups)
+        .where(eq(duplicateGroups.userId, userId));
 
-    const [patternCount] = await db
-      .select({ count: count() })
-      .from(codePatterns)
-      .where(eq(codePatterns.userId, userId))
-      .catch(err => {
-        logger.error('Error fetching pattern count', { error: err.message, userId });
-        throw new AppError('Database error', 500);
+      const [patternCount] = await db
+        .select({ count: count() })
+        .from(codePatterns)
+        .where(eq(codePatterns.userId, userId));
+
+      const languageStats = await db
+        .select({
+          language: projects.language,
+          count: count(),
+        })
+        .from(projects)
+        .where(eq(projects.userId, userId))
+        .groupBy(projects.language);
+
+      const languages: Record<string, number> = {};
+      languageStats.forEach(stat => {
+        if (stat.language) {
+          languages[stat.language] = stat.count;
+        }
       });
 
-    const languageStats = await db
-      .select({
-        language: projects.language,
-        count: count(),
-      })
-      .from(projects)
-      .where(eq(projects.userId, userId))
-      .groupBy(projects.language)
-      .catch(err => {
-        logger.error('Error fetching language stats', { error: err.message, userId });
-        throw new AppError('Database error', 500);
-      });
-
-    const languages: Record<string, number> = {};
-    languageStats.forEach(stat => {
-      if (stat.language) {
-        languages[stat.language] = stat.count;
-      }
-    });
-
-    return {
-      totalProjects: projectCount.count,
-      duplicatesFound: duplicateCount.count,
-      similarPatterns: patternCount.count,
-      languages,
-    };
+      return {
+        totalProjects: projectCount.count,
+        duplicatesFound: duplicateCount.count,
+        similarPatterns: patternCount.count,
+        languages,
+      };
+    } catch (error) {
+      logger.error('Error fetching project stats', { error: (error as Error).message, userId });
+      throw new AppError('Failed to fetch project statistics', 500);
+    }
   }
 
   // Analysis operations

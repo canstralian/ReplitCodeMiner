@@ -225,10 +225,10 @@ export class ReplitApiService {
 
   private extractFunctionPatterns(file: CodeFile, lines: string[]): CodePattern[] {
     const patterns: CodePattern[] = [];
-    const functionRegex = /(?:function\s+(\w+)|const\s+(\w+)\s*=|(\w+)\s*:\s*function)/g;
+    const functionRegex = /(?:function\s+(\w+)|const\s+(\w+)\s*=|(\w+)\s*:\s*function)/;
 
     lines.forEach((line, index) => {
-      const match = functionRegex.exec(line);
+      const match = line.match(functionRegex);
       if (match) {
         const functionName = match[1] || match[2] || match[3];
         const snippet = this.extractFunctionBody(lines, index);
@@ -330,13 +330,34 @@ export class ReplitApiService {
   private findSimilarPatterns(patterns: CodePattern[]): DuplicateMatch[] {
     const similar: DuplicateMatch[] = [];
     const threshold = 0.8; // 80% similarity
+    const processed = new Set<string>();
 
-    for (let i = 0; i < patterns.length; i++) {
-      for (let j = i + 1; j < patterns.length; j++) {
-        const pattern1 = patterns[i];
-        const pattern2 = patterns[j];
-        
-        if (pattern1.patternType === pattern2.patternType) {
+    // Group patterns by type for more efficient comparison
+    const patternsByType = new Map<string, CodePattern[]>();
+    patterns.forEach(pattern => {
+      if (!patternsByType.has(pattern.patternType)) {
+        patternsByType.set(pattern.patternType, []);
+      }
+      patternsByType.get(pattern.patternType)!.push(pattern);
+    });
+
+    // Only compare patterns of the same type
+    patternsByType.forEach(typePatterns => {
+      for (let i = 0; i < typePatterns.length; i++) {
+        for (let j = i + 1; j < typePatterns.length; j++) {
+          const pattern1 = typePatterns[i];
+          const pattern2 = typePatterns[j];
+          
+          const pairKey = `${pattern1.patternHash}-${pattern2.patternHash}`;
+          if (processed.has(pairKey)) continue;
+          processed.add(pairKey);
+          
+          // Skip if patterns are too different in size
+          const sizeDiff = Math.abs(pattern1.codeSnippet.length - pattern2.codeSnippet.length);
+          if (sizeDiff > Math.max(pattern1.codeSnippet.length, pattern2.codeSnippet.length) * 0.5) {
+            continue;
+          }
+          
           const similarity = this.calculateSimilarity(pattern1.codeSnippet, pattern2.codeSnippet);
           
           if (similarity >= threshold) {
@@ -349,7 +370,7 @@ export class ReplitApiService {
           }
         }
       }
-    }
+    });
 
     return similar;
   }

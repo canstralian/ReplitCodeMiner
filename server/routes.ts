@@ -44,6 +44,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post('/api/auth/logout', (req, res) => {
+    req.logout((err) => {
+      if (err) {
+        logger.error('Logout error', { error: err.message });
+        return res.status(500).json({ message: 'Logout failed' });
+      }
+      req.session.destroy((err) => {
+        if (err) {
+          logger.error('Session destroy error', { error: err.message });
+          return res.status(500).json({ message: 'Session cleanup failed' });
+        }
+        res.clearCookie('connect.sid');
+        res.json({ message: 'Logged out successfully' });
+      });
+    });
+  });
+
   // Projects routes
   app.get('/api/projects', isAuthenticated, validateRequest(refreshProjectsSchema), async (req: any, res, next) => {
     try {
