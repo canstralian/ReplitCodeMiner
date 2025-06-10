@@ -57,7 +57,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Projects routes
-  app.get('/api/projects', isAuthenticated, async (req: any, res, next) => {
+  app.get('/api/projects', async (req: any, res, next) => {
     try {
       const userId = req.user?.claims?.sub;
       if (!userId) {
@@ -90,7 +90,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/projects/stats', isAuthenticated, async (req: any, res, next) => {
+  app.get('/api/projects/stats', async (req: any, res, next) => {
     try {
       const userId = req.user?.claims?.sub;
       if (!userId) {
@@ -109,7 +109,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/projects/analyze', isAuthenticated, async (req: any, res, next) => {
+  app.post('/api/projects/analyze', async (req: any, res, next) => {
     try {
       const userId = req.user?.claims?.sub;
       if (!userId) {
@@ -144,7 +144,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/duplicates', isAuthenticated, async (req: any, res, next) => {
+  app.get('/api/duplicates', async (req: any, res, next) => {
     try {
       const userId = req.user?.claims?.sub;
       if (!userId) {
@@ -163,7 +163,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/duplicates/:groupId', isAuthenticated, async (req: any, res, next) => {
+  app.get('/api/duplicates/:groupId', async (req: any, res, next) => {
     try {
       const userId = req.user?.claims?.sub;
       if (!userId) {
@@ -194,7 +194,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/search', isAuthenticated, async (req: any, res, next) => {
+  app.post('/api/search', async (req: any, res, next) => {
     try {
       const userId = req.user?.claims?.sub;
       if (!userId) {
@@ -241,7 +241,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Analytics routes
-  app.get('/api/analytics', isAuthenticated, async (req: any, res, next) => {
+  app.get('/api/analytics', async (req: any, res, next) => {
     try {
       const userId = req.user?.claims?.sub;
       if (!userId) {
@@ -263,7 +263,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // AI Analysis routes
-  app.post('/api/ai/analyze-similarity', isAuthenticated, async (req: any, res, next) => {
+  app.post('/api/ai/analyze-similarity', async (req: any, res, next) => {
     try {
       const userId = req.user?.claims?.sub;
       if (!userId) {
@@ -301,7 +301,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/ai/refactoring-suggestions', isAuthenticated, async (req: any, res, next) => {
+  app.post('/api/ai/refactoring-suggestions', async (req: any, res, next) => {
     try {
       const userId = req.user?.claims?.sub;
       if (!userId) {
@@ -364,7 +364,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Code quality analysis
-  app.post('/api/analyze/quality', isAuthenticated, async (req: any, res, next) => {
+  app.post('/api/analyze/quality', async (req: any, res, next) => {
     try {
       const userId = req.user?.claims?.sub;
       if (!userId) {
@@ -409,7 +409,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Search history and saved searches
-  app.get('/api/search/history', isAuthenticated, async (req: any, res, next) => {
+  app.get('/api/search/history', async (req: any, res, next) => {
     try {
       const userId = req.user?.claims?.sub;
       if (!userId) {
@@ -428,7 +428,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/search/save', isAuthenticated, async (req: any, res, next) => {
+  app.post('/api/search/save', async (req: any, res, next) => {
     try {
       const userId = req.user?.claims?.sub;
       if (!userId) {
@@ -459,7 +459,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/search/saved', isAuthenticated, async (req: any, res, next) => {
+  app.get('/api/search/saved', async (req: any, res, next) => {
     try {
       const userId = req.user?.claims?.sub;
       if (!userId) {
@@ -484,7 +484,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // AI provider management endpoints
-  app.get('/api/ai/providers', isAuthenticated, async (req: any, res) => {
+  app.get('/api/ai/providers', async (req: any, res) => {
     try {
       const { aiAnalysisService } = await import('./aiAnalysis');
       const providers = await aiAnalysisService.getAvailableProviders();
@@ -495,7 +495,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/ai/test/:providerName', isAuthenticated, async (req: any, res) => {
+  app.post('/api/ai/test/:providerName', async (req: any, res) => {
     try {
       const { aiAnalysisService } = await import('./aiAnalysis');
       const { providerName } = req.params;
