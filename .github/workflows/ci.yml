@@ -1,0 +1,75 @@
+
+name: Continuous Integration
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  code-quality:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Type checking
+      run: npm run check
+      
+    - name: Lint code
+      run: npm run lint
+      
+    - name: Check formatting
+      run: npm run format:check
+      
+    - name: Run tests
+      run: npm run test
+      
+    - name: Build project
+      run: npm run build
+      
+    - name: Code quality analysis
+      run: npm run quality:check
+      
+    - name: Security audit
+      run: npm audit --audit-level=moderate
+      
+    - name: Upload ESLint report
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: eslint-report-${{ matrix.node-version }}
+        path: eslint-report.json
+        retention-days: 30
+        
+    - name: Upload security report
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: security-report-${{ matrix.node-version }}
+        path: security-report.json
+        retention-days: 30
+
+  dependency-review:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    - name: Dependency Review
+      uses: actions/dependency-review-action@v4

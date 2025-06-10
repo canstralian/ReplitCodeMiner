@@ -1,0 +1,82 @@
+
+name: Code Quality Analysis
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    - cron: '0 2 * * 1'  # Weekly on Monday at 2 AM
+
+jobs:
+  quality-gate:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Run comprehensive quality check
+      run: npm run quality:check
+      
+    - name: Generate complexity report
+      run: |
+        npx madge --circular --extensions ts,tsx,js,jsx ./client/src ./server > complexity-report.txt || true
+        npx madge --image dependency-graph.svg --extensions ts,tsx,js,jsx ./client/src ./server || true
+        
+    - name: Check bundle size
+      run: |
+        npm run build
+        npx bundlesize
+        
+    - name: Detect secrets
+      uses: trufflesecurity/trufflehog@main
+      with:
+        path: ./
+        base: main
+        head: HEAD
+        
+    - name: Comment PR with quality metrics
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+          try {
+            const eslintReport = JSON.parse(fs.readFileSync('eslint-report.json', 'utf8'));
+            const totalErrors = eslintReport.reduce((sum, file) => sum + file.errorCount, 0);
+            const totalWarnings = eslintReport.reduce((sum, file) => sum + file.warningCount, 0);
+            
+            const comment = `## 📊 Code Quality Report
+            
+            ### ESLint Results
+            - **Errors:** ${totalErrors}
+            - **Warnings:** ${totalWarnings}
+            
+            ### Files Analyzed
+            - **Total:** ${eslintReport.length}
+            
+            ${totalErrors > 0 ? '❌ Please fix the errors before merging.' : '✅ No errors found!'}
+            `;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+          } catch (error) {
+            console.log('Could not generate quality report comment:', error.message);
+          }
