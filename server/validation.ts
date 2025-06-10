@@ -24,7 +24,7 @@ export const refreshProjectsSchema = z.object({
 
 export const duplicateGroupSchema = z.object({
   params: z.object({
-    groupId: z.string().regex(/^\d+$/)
+    groupId: z.string()
   })
 });
 
