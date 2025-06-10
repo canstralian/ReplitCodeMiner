@@ -7,7 +7,6 @@ import { insertProjectSchema } from "@shared/schema";
 import { z } from "zod";
 import { logger, AppError } from "./logger";
 import { validateRequest, projectAnalysisSchema, searchSchema, refreshProjectsSchema, duplicateGroupSchema } from "./validation";
-import { isAuthenticated } from "./replitAuth";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   await setupAuth(app);
@@ -63,9 +62,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         throw new AppError('User ID not found', 401);
       }
 
-      const { refresh } = req.query;
+      const { refresh, force } = req.query;
 
-      if (refresh === 'true') {
+      if (refresh === 'true' || force === true) {
         if (!req.user.access_token) {
           throw new AppError('Access token not found', 401);
         }
@@ -143,7 +142,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/duplicates', async (req: any, res, next) => {
+  app.get('/api/duplicates', isAuthenticated, async (req: any, res, next) => {
     try {
       const userId = req.user?.claims?.sub;
       if (!userId) {
@@ -162,7 +161,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/duplicates/:groupId', async (req: any, res, next) => {
+  app.get('/api/duplicates/:groupId', isAuthenticated, async (req: any, res, next) => {
     try {
       const userId = req.user?.claims?.sub;
       if (!userId) {
@@ -240,7 +239,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Analytics routes
-  app.get('/api/analytics', async (req: any, res, next) => {
+  app.get('/api/analytics', isAuthenticated, async (req: any, res, next) => {
     try {
       const userId = req.user?.claims?.sub;
       if (!userId) {
@@ -262,7 +261,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // AI Analysis routes
-  app.post('/api/ai/analyze-similarity', async (req: any, res, next) => {
+  app.post('/api/ai/analyze-similarity', isAuthenticated, async (req: any, res, next) => {
     try {
       const userId = req.user?.claims?.sub;
       if (!userId) {
@@ -300,7 +299,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/ai/refactoring-suggestions', async (req: any, res, next) => {
+  app.post('/api/ai/refactoring-suggestions', isAuthenticated, async (req: any, res, next) => {
     try {
       const userId = req.user?.claims?.sub;
       if (!userId) {
@@ -363,7 +362,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Code quality analysis
-  app.post('/api/analyze/quality', async (req: any, res, next) => {
+  app.post('/api/analyze/quality', isAuthenticated, async (req: any, res, next) => {
     try {
       const userId = req.user?.claims?.sub;
       if (!userId) {
@@ -408,7 +407,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Search history and saved searches
-  app.get('/api/search/history', async (req: any, res, next) => {
+  app.get('/api/search/history', isAuthenticated, async (req: any, res, next) => {
     try {
       const userId = req.user?.claims?.sub;
       if (!userId) {
@@ -427,7 +426,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/search/save', async (req: any, res, next) => {
+  app.post('/api/search/save', isAuthenticated, async (req: any, res, next) => {
     try {
       const userId = req.user?.claims?.sub;
       if (!userId) {
@@ -458,7 +457,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/search/saved', async (req: any, res, next) => {
+  app.get('/api/search/saved', isAuthenticated, async (req: any, res, next) => {
     try {
       const userId = req.user?.claims?.sub;
       if (!userId) {
