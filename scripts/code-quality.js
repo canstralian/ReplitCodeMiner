@@ -28,6 +28,8 @@ class CodeQualityChecker {
       await this.checkTypes();
       await this.analyzeComplexity();
       await this.checkSecurity();
+      await this.checkDependencies();
+      await this.checkComplexity();
       
       this.generateReport();
     } catch (error) {
@@ -109,6 +111,39 @@ class CodeQualityChecker {
       }
     } catch (error) {
       console.log('⚠️  Security audit completed with warnings');
+    }
+  }
+
+  async checkDependencies() {
+    console.log('📦 Checking dependencies...');
+    try {
+      execSync('npx depcheck --json > dependency-report.json', { stdio: 'pipe' });
+      const report = JSON.parse(fs.readFileSync('dependency-report.json', 'utf8'));
+      const unusedCount = Object.keys(report.dependencies || {}).length;
+      if (unusedCount > 0) {
+        this.warnings.push(`${unusedCount} unused dependencies found`);
+        console.log(`⚠️  ${unusedCount} unused dependencies`);
+      } else {
+        console.log('✅ No unused dependencies');
+      }
+    } catch (error) {
+      console.log('⚠️  Dependency check completed with warnings');
+    }
+  }
+
+  async checkComplexity() {
+    console.log('🔄 Analyzing complexity...');
+    try {
+      execSync('npx madge --circular --json --extensions ts,tsx,js,jsx ./client/src ./server > complexity-report.json', { stdio: 'pipe' });
+      const report = JSON.parse(fs.readFileSync('complexity-report.json', 'utf8'));
+      if (report.length > 0) {
+        this.warnings.push(`${report.length} circular dependencies found`);
+        console.log(`⚠️  ${report.length} circular dependencies detected`);
+      } else {
+        console.log('✅ No circular dependencies');
+      }
+    } catch (error) {
+      console.log('⚠️  Complexity analysis completed with warnings');
     }
   }
 

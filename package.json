@@ -14,7 +14,13 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "quality:check": "node scripts/code-quality.js",
-    "test": "echo \"No tests specified\" && exit 0",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "deps:check": "npx depcheck",
+    "deps:update": "npx npm-check-updates -i",
+    "complexity": "npx madge --circular --extensions ts,tsx,js,jsx ./client/src ./server",
+    "complexity:graph": "npx madge --image dependency-graph.svg --extensions ts,tsx,js,jsx ./client/src ./server",
+    "bundle:analyze": "npx tsup --analyze",
     "prepare": "husky install",
     "pre-commit": "lint-staged"
   },
@@ -107,13 +113,18 @@
     "@types/ws": "^8.18.1",
     "@vitejs/plugin-react": "^4.5.2",
     "autoprefixer": "^10.4.21",
+    "depcheck": "^1.4.7",
     "drizzle-kit": "^0.31.1",
     "esbuild": "^0.25.5",
+    "madge": "^8.0.0",
+    "npm-check-updates": "^16.14.12",
     "postcss": "^8.5.4",
     "tailwindcss": "^4.1.8",
+    "tsup": "^8.0.1",
     "tsx": "^4.19.4",
     "typescript": "5.8.3",
-    "vite": "^6.3.5"
+    "vite": "^6.3.5",
+    "vitest": "^1.2.0"
   },
   "optionalDependencies": {
     "bufferutil": "^4.0.9"
