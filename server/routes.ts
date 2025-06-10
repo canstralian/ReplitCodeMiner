@@ -494,11 +494,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/ai/test/:provider', isAuthenticated, async (req: any, res) => {
+  app.post('/api/ai/test/:providerName', isAuthenticated, async (req: any, res) => {
     try {
       const { aiAnalysisService } = await import('./aiAnalysis');
-      const { provider } = req.params;
-      const result = await aiAnalysisService.testProvider(provider);
+      const { providerName } = req.params;
+      const result = await aiAnalysisService.testProvider(providerName);
       res.json(result);
     } catch (error) {
       logger.error('Failed to test AI provider', { error: (error as Error).message });
