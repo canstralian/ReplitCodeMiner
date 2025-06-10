@@ -12,7 +12,7 @@ import { Search, SlidersHorizontal, Grid3X3, List } from "lucide-react";
 export default function Dashboard() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedLanguage, setSelectedLanguage] = useState("all");
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [viewMode, setViewMode<"grid" | "list">("grid");
   const [selectedProjects, setSelectedProjects] = useState<string[]>([]);
   const [showComparison, setShowComparison] = useState(false);
 
@@ -53,24 +53,24 @@ export default function Dashboard() {
     const matchesSearch = !searchQuery || 
       project.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       project.description?.toLowerCase().includes(searchQuery.toLowerCase());
-    
+
     const matchesLanguage = selectedLanguage === "all" || 
       project.language?.toLowerCase() === selectedLanguage.toLowerCase();
-    
+
     return matchesSearch && matchesLanguage;
   });
 
   return (
     <div className="min-h-screen bg-editor-dark">
       <Header />
-      
+
       <div className="flex h-screen pt-16">
         <Sidebar 
           stats={stats}
           duplicates={duplicates}
           onRefresh={handleRefreshProjects}
         />
-        
+
         <main className="flex-1 overflow-hidden">
           {/* Search Header */}
           <div className="bg-navy-dark border-b border-gray-700 p-4">

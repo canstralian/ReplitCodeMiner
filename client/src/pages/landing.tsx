@@ -25,34 +25,34 @@ export default function Landing() {
       </header>
 
       {/* Hero Section */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-12 sm:py-20">
         <div className="text-center">
-          <h1 className="text-4xl md:text-6xl font-bold text-white mb-6">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4 sm:mb-6 leading-tight">
             Find Duplicate Code
-            <span className="block text-replit-orange">Across Your Repls</span>
+            <span className="block text-replit-orange mt-1 sm:mt-2">Across Your Repls</span>
           </h1>
-          <p className="text-xl text-gray-300 mb-8 max-w-3xl mx-auto">
+          <p className="text-base sm:text-lg md:text-xl text-gray-300 mb-6 sm:mb-8 max-w-2xl lg:max-w-3xl mx-auto px-2 leading-relaxed">
             Connect your Replit account to automatically scan all your projects, identify duplicate code patterns, 
             and discover opportunities to optimize your codebase.
           </p>
           <Button 
             onClick={handleLogin}
             size="lg"
-            className="bg-replit-orange hover:bg-orange-600 text-white px-8 py-4 text-lg"
+            className="bg-replit-orange hover:bg-orange-600 text-white px-6 py-3 sm:px-8 sm:py-4 text-base sm:text-lg w-full sm:w-auto max-w-xs sm:max-w-none"
           >
             Get Started Free
           </Button>
         </div>
 
         {/* Features Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mt-20">
-          <Card className="bg-navy-dark border-gray-700 hover:border-replit-orange transition-colors">
-            <CardHeader>
-              <Search className="w-8 h-8 text-accent-blue mb-2" />
-              <CardTitle className="text-white">Smart Analysis</CardTitle>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mt-12 sm:mt-20">
+          <Card className="bg-navy-dark border-gray-700 hover:border-replit-orange transition-colors p-4 sm:p-6">
+            <CardHeader className="pb-3 sm:pb-4">
+              <Search className="w-6 h-6 sm:w-8 sm:h-8 text-accent-blue mb-1 sm:mb-2" />
+              <CardTitle className="text-white text-lg sm:text-xl">Smart Analysis</CardTitle>
             </CardHeader>
-            <CardContent>
-              <p className="text-gray-300">
+            <CardContent className="pt-0">
+              <p className="text-gray-300 text-sm sm:text-base leading-relaxed">
                 Advanced pattern recognition to detect similar code structures, functions, and components.
               </p>
             </CardContent>

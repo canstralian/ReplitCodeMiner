@@ -66,7 +66,7 @@ export default function ProjectCard({ project, isSelected, onSelect, viewMode }:
     const date = new Date(dateString);
     const now = new Date();
     const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
-    
+
     if (diffInHours < 24) {
       return `${diffInHours} hours ago`;
     } else {
@@ -87,7 +87,7 @@ export default function ProjectCard({ project, isSelected, onSelect, viewMode }:
               onCheckedChange={onSelect}
               className="border-gray-600 data-[state=checked]:bg-replit-orange data-[state=checked]:border-replit-orange"
             />
-            
+
             <div className="flex-1 min-w-0">
               <div className="flex items-center space-x-2 mb-1">
                 <h3 className="font-semibold text-white truncate">{project.title}</h3>
@@ -97,7 +97,7 @@ export default function ProjectCard({ project, isSelected, onSelect, viewMode }:
               </div>
               <p className="text-gray-400 text-sm truncate">{project.description || "No description"}</p>
             </div>
-            
+
             <div className="flex items-center space-x-4 text-sm text-gray-500">
               <span>{project.fileCount} files</span>
               <span>{formatLastUpdated(project.lastUpdated)}</span>
@@ -106,7 +106,7 @@ export default function ProjectCard({ project, isSelected, onSelect, viewMode }:
                 <span className="hidden lg:inline">{getDuplicateStatusText()}</span>
               </div>
             </div>
-            
+
             <div className="flex space-x-2">
               <Button
                 variant="outline"
@@ -149,7 +149,7 @@ export default function ProjectCard({ project, isSelected, onSelect, viewMode }:
           </div>
         </div>
       </div>
-      
+
       <CardContent className="p-4">
         <div className="flex items-start justify-between mb-2">
           <h3 className="font-semibold text-white group-hover:text-replit-orange transition-colors line-clamp-1">
@@ -164,16 +164,16 @@ export default function ProjectCard({ project, isSelected, onSelect, viewMode }:
             <ExternalLink className="h-4 w-4" />
           </Button>
         </div>
-        
+
         <p className="text-gray-400 text-sm mb-3 line-clamp-2">
           {project.description || "No description available"}
         </p>
-        
+
         <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
           <span>{formatLastUpdated(project.lastUpdated)}</span>
           <span>{project.fileCount} files</span>
         </div>
-        
+
         <div className="flex items-center space-x-2">
           <Button
             variant="outline"
