@@ -9,8 +9,8 @@ import { logger, AppError } from "./logger";
 // Validation imports temporarily removed to fix path-to-regexp error
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Auth middleware temporarily disabled to fix path-to-regexp error
-  // await setupAuth(app);
+  // Auth middleware
+  await setupAuth(app);
 
   const replitApi = new ReplitApiService();
 
@@ -321,11 +321,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const { aiAnalysisService } = await import('./aiAnalysis');
-      const patterns = duplicateGroup.patterns.map(p => ({
-        code: p.codeSnippet,
-        filePath: p.filePath,
-        projectName: 'Project' // You might want to join with projects table
-      }));
+      
+      // Mock patterns data since duplicateGroup.patterns doesn't exist in the current schema
+      const patterns = [{
+        code: duplicateGroup.description || '',
+        filePath: 'unknown',
+        projectName: 'Project'
+      }];
 
       const suggestions = await aiAnalysisService.generateRefactoringSuggestions(patterns);
 
@@ -333,7 +335,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       for (const suggestion of suggestions) {
         await storage.storeRefactoringSuggestion(userId, {
           duplicateGroupId,
-          ...suggestion
+          suggestionsType: suggestion.type,
+          title: suggestion.title,
+          description: suggestion.description,
+          beforeCode: suggestion.beforeCode,
+          afterCode: suggestion.afterCode,
+          estimatedEffort: suggestion.estimatedEffort,
+          potentialSavings: suggestion.potentialSavings,
+          priority: suggestion.priority
         });
       }
 
@@ -375,9 +384,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Store quality metrics if projectId and filePath are provided
       if (projectId && filePath) {
         await storage.storeCodeMetrics(userId, {
-          projectId,
-          filePath,
-          ...qualityMetrics
+          projectId: parseInt(projectId),
+          filePath: filePath,
+          complexity: qualityMetrics.complexity,
+          linesOfCode: code.split('\n').length,
+          maintainabilityIndex: qualityMetrics.maintainabilityIndex,
+          technicalDebt: qualityMetrics.technicalDebt,
+          codeSmells: qualityMetrics.codeSmells,
+          securityIssues: qualityMetrics.securityIssues,
+          performance: qualityMetrics.performance
         });
       }
 

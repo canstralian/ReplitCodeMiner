@@ -36,10 +36,11 @@ app.use((req: any, res, next) => {
     });
 
     if (err instanceof AppError) {
-      return res.status(err.statusCode).json({
+      res.status(err.statusCode).json({
         message: err.message,
         ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
       });
+      return;
     }
 
     const status = err.status || err.statusCode || 500;
@@ -55,21 +56,14 @@ app.use((req: any, res, next) => {
 
   // Setup Vite for development
   if (app.get("env") === "development") {
-    const { createServer } = await import("http");
-    const server = createServer(app);
     await setupVite(app, server);
-    
-    const port = 5000;
-    server.listen(port, "0.0.0.0", () => {
-      log(`serving on port ${port}`);
-      logger.info('Server started successfully', { port, environment: process.env.NODE_ENV });
-    });
   } else {
     serveStatic(app);
-    const port = 5000;
-    app.listen(port, "0.0.0.0", () => {
-      log(`serving on port ${port}`);
-      logger.info('Server started successfully', { port, environment: process.env.NODE_ENV });
-    });
   }
+
+  const port = 5000;
+  server.listen(port, "0.0.0.0", () => {
+    log(`serving on port ${port}`);
+    logger.info('Server started successfully', { port, environment: process.env.NODE_ENV });
+  });
 })();
