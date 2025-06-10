@@ -23,9 +23,16 @@ export const refreshProjectsSchema = z.object({
 });
 
 export const duplicateGroupSchema = z.object({
-  params: z.object({
-    groupId: z.string()
+  body: z.object({
+    groupId: z.string().min(1, "Group ID is required"),
+    newName: z.string().min(1, "New name is required").max(100, "Name too long")
   })
+});
+
+export const refreshProjectsSchema = z.object({
+  query: z.object({
+    force: z.string().optional().transform(val => val === 'true')
+  }).optional()
 });
 
 export function validateRequest(schema: z.ZodSchema) {

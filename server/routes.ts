@@ -7,6 +7,7 @@ import { insertProjectSchema } from "@shared/schema";
 import { z } from "zod";
 import { logger, AppError } from "./logger";
 import { validateRequest, projectAnalysisSchema, searchSchema, refreshProjectsSchema, duplicateGroupSchema } from "./validation";
+import { isAuthenticated } from "./replitAuth";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   await setupAuth(app);

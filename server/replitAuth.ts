@@ -86,7 +86,7 @@ export async function setupAuth(app: Express) {
 
   const domains = process.env.REPLIT_DOMAINS!.split(",");
   const primaryDomain = domains[0].trim();
-  
+
   // Use a single strategy with a clean name
   const strategy = new Strategy(
     {
@@ -159,4 +159,11 @@ export const isAuthenticated: RequestHandler = (req, res, next) => {
       res.status(401).json({ message: "Unauthorized" });
     }
   })();
+};
+
+export const isAuthenticated = (req: any, res: any, next: any) => {
+  if (req.isAuthenticated && req.isAuthenticated()) {
+    return next();
+  }
+  res.status(401).json({ message: 'Authentication required' });
 };
