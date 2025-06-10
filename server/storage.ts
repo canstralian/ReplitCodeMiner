@@ -4,6 +4,11 @@ import {
   codePatterns, 
   duplicateGroups, 
   patternGroups,
+  searchHistory,
+  savedSearches,
+  aiAnalysis,
+  codeMetrics,
+  refactoringSuggestions,
   type User, 
   type UpsertUser,
   type Project,
@@ -14,7 +19,7 @@ import {
   type InsertDuplicateGroup
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, desc, count, sql, like, or } from "drizzle-orm";
+import { eq, and, desc, count, sql, like, or, gte } from "drizzle-orm";
 import type { ReplitProject, AnalysisResult } from "./replitApi";
 import { logger, AppError } from "./logger";
 
@@ -22,7 +27,7 @@ export interface IStorage {
   // User operations (required for Replit Auth)
   getUser(id: string): Promise<User | undefined>;
   upsertUser(user: UpsertUser): Promise<User>;
-  
+
   // Project operations
   getUserProjects(userId: string): Promise<Project[]>;
   syncUserProjects(userId: string, replitProjects: ReplitProject[]): Promise<void>;
@@ -32,18 +37,77 @@ export interface IStorage {
     similarPatterns: number;
     languages: Record<string, number>;
   }>;
-  
+
   // Analysis operations
   storeAnalysisResults(userId: string, results: AnalysisResult[]): Promise<void>;
   getUserDuplicates(userId: string): Promise<DuplicateGroup[]>;
   getDuplicateGroup(userId: string, groupId: number): Promise<DuplicateGroup | undefined>;
-  
+
   // Search operations
   searchCodePatterns(userId: string, options: {
     query?: string;
     language?: string;
     patternType?: string;
   }): Promise<CodePattern[]>;
+
+    // Analytics operations
+    getAnalytics(userId: string, timeRange: string): Promise<any>;
+
+    // Search history operations
+    addSearchHistory(userId: string, searchData: {
+      query: string;
+      filters: any;
+      resultCount: number;
+      executionTime: number;
+    }): Promise<void>;
+    getSearchHistory(userId: string, limit: number): Promise<any[]>;
+  
+    // Saved searches operations
+    saveSearch(userId: string, searchData: {
+      name: string;
+      query: string;
+      filters: any;
+      isPublic: boolean;
+    }): Promise<any>;
+    getSavedSearches(userId: string): Promise<any[]>;
+  
+    // AI Analysis operations
+    storeAIAnalysis(userId: string, analysisData: {
+      analysisType: string;
+      projectId?: number;
+      patternId?: number;
+      aiProvider?: string;
+      prompt: string;
+      response: string;
+      confidence: number;
+      metadata?: any;
+    }): Promise<void>;
+  
+    // Code metrics operations
+    storeCodeMetrics(userId: string, metricsData: {
+      projectId: number;
+      filePath: string;
+      complexity: number;
+      linesOfCode: number;
+      maintainabilityIndex: number;
+      technicalDebt: number;
+      codeSmells: any;
+      securityIssues: any;
+      performance: any;
+    }): Promise<void>;
+  
+    // Refactoring suggestions operations
+    storeRefactoringSuggestion(userId: string, suggestionData: {
+      duplicateGroupId: number;
+      suggestionsType: string;
+      title: string;
+      description: string;
+      beforeCode: string;
+      afterCode: string;
+      estimatedEffort: string;
+      potentialSavings: number;
+      priority: number;
+    }): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -84,7 +148,7 @@ export class DatabaseStorage implements IStorage {
     const batchSize = 50;
     for (let i = 0; i < replitProjects.length; i += batchSize) {
       const batch = replitProjects.slice(i, i + batchSize);
-      
+
       try {
         await db.transaction(async (tx) => {
           for (const replitProject of batch) {
@@ -263,28 +327,256 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Search operations
-  async searchCodePatterns(userId: string, options: {
-    query?: string;
+  async searchCodePatterns(userId: string, searchParams: {
+    query: string;
     language?: string;
     patternType?: string;
-  }): Promise<CodePattern[]> {
-    const conditions = [eq(codePatterns.userId, userId)];
+  }): Promise<any[]> {
+    const { query, language, patternType } = searchParams;
 
-    if (options.patternType) {
-      conditions.push(eq(codePatterns.patternType, options.patternType));
+    let searchQuery = db
+      .select({
+        id: codePatterns.id,
+        filePath: codePatterns.filePath,
+        codeSnippet: codePatterns.codeSnippet,
+        patternType: codePatterns.patternType,
+        lineStart: codePatterns.lineStart,
+        lineEnd: codePatterns.lineEnd,
+        projectTitle: projects.title,
+        projectLanguage: projects.language,
+      })
+      .from(codePatterns)
+      .innerJoin(projects, eq(codePatterns.projectId, projects.id))
+      .where(eq(codePatterns.userId, userId));
+
+    // Apply filters
+    if (language) {
+      searchQuery = searchQuery.where(eq(projects.language, language));
     }
 
-    if (options.query) {
-      conditions.push(
-        sql`${codePatterns.codeSnippet} ILIKE ${`%${options.query}%`}`
-      );
+    if (patternType) {
+      searchQuery = searchQuery.where(eq(codePatterns.patternType, patternType));
     }
 
+    const results = await searchQuery;
+
+    // Simple text search in code snippets
+    return results.filter(result => 
+      result.codeSnippet.toLowerCase().includes(query.toLowerCase()) ||
+      result.filePath.toLowerCase().includes(query.toLowerCase())
+    );
+  }
+
+  // Analytics operations
+  async getAnalytics(userId: string, timeRange: string): Promise<any> {
+    const timeFilter = this.getTimeFilter(timeRange);
+
+    // Get overview stats
+    const [projectStats] = await db
+      .select({
+        totalProjects: count(projects.id),
+      })
+      .from(projects)
+      .where(eq(projects.userId, userId));
+
+    const [duplicateStats] = await db
+      .select({
+        duplicatesFound: count(duplicateGroups.id),
+      })
+      .from(duplicateGroups)
+      .where(and(
+        eq(duplicateGroups.userId, userId),
+        timeFilter ? gte(duplicateGroups.createdAt, timeFilter) : undefined
+      ));
+
+    const [patternStats] = await db
+      .select({
+        codePatterns: count(codePatterns.id),
+      })
+      .from(codePatterns)
+      .where(and(
+        eq(codePatterns.userId, userId),
+        timeFilter ? gte(codePatterns.createdAt, timeFilter) : undefined
+      ));
+
+    // Get duplicates by language
+    const duplicatesByLanguage = await db
+      .select({
+        language: projects.language,
+        count: count(codePatterns.id),
+      })
+      .from(codePatterns)
+      .innerJoin(projects, eq(codePatterns.projectId, projects.id))
+      .where(eq(codePatterns.userId, userId))
+      .groupBy(projects.language);
+
+    // Get pattern types distribution
+    const patternTypes = await db
+      .select({
+        patternType: codePatterns.patternType,
+        count: count(codePatterns.id),
+      })
+      .from(codePatterns)
+      .where(eq(codePatterns.userId, userId))
+      .groupBy(codePatterns.patternType);
+
+    return {
+      overview: {
+        totalProjects: projectStats.totalProjects || 0,
+        duplicatesFound: duplicateStats.duplicatesFound || 0,
+        codePatterns: patternStats.codePatterns || 0,
+        lastScan: "2 hours ago", // This should come from actual last analysis time
+        duplicatePercentage: 12.4, // Calculate based on actual data
+        trend: "+2.3%"
+      },
+      duplicatesByLanguage: duplicatesByLanguage.map(item => ({
+        name: item.language || 'Unknown',
+        value: item.count,
+        color: this.getLanguageColor(item.language || '')
+      })),
+      patternTypes: patternTypes.map(item => ({
+        name: item.patternType || 'Unknown',
+        count: item.count,
+        percentage: Math.round((item.count / (patternStats.codePatterns || 1)) * 100)
+      })),
+      timeSeriesData: [], // TODO: Implement time series data
+      topDuplicateProjects: [] // TODO: Implement top projects
+    };
+  }
+
+  // Search history operations
+  async addSearchHistory(userId: string, searchData: {
+    query: string;
+    filters: any;
+    resultCount: number;
+    executionTime: number;
+  }): Promise<void> {
+    await db.insert(searchHistory).values({
+      userId,
+      ...searchData
+    });
+  }
+
+  async getSearchHistory(userId: string, limit: number = 10): Promise<any[]> {
     return await db
       .select()
-      .from(codePatterns)
-      .where(and(...conditions))
-      .orderBy(desc(codePatterns.createdAt));
+      .from(searchHistory)
+      .where(eq(searchHistory.userId, userId))
+      .orderBy(desc(searchHistory.createdAt))
+      .limit(limit);
+  }
+
+  // Saved searches operations
+  async saveSearch(userId: string, searchData: {
+    name: string;
+    query: string;
+    filters: any;
+    isPublic: boolean;
+  }): Promise<any> {
+    const [savedSearch] = await db
+      .insert(savedSearches)
+      .values({
+        userId,
+        ...searchData
+      })
+      .returning();
+
+    return savedSearch;
+  }
+
+  async getSavedSearches(userId: string): Promise<any[]> {
+    return await db
+      .select()
+      .from(savedSearches)
+      .where(eq(savedSearches.userId, userId))
+      .orderBy(desc(savedSearches.createdAt));
+  }
+
+  // AI Analysis operations
+  async storeAIAnalysis(userId: string, analysisData: {
+    analysisType: string;
+    projectId?: number;
+    patternId?: number;
+    aiProvider?: string;
+    prompt: string;
+    response: string;
+    confidence: number;
+    metadata?: any;
+  }): Promise<void> {
+    await db.insert(aiAnalysis).values({
+      userId,
+      processingTime: 0, // Will be calculated by caller
+      ...analysisData
+    });
+  }
+
+  // Code metrics operations
+  async storeCodeMetrics(userId: string, metricsData: {
+    projectId: number;
+    filePath: string;
+    complexity: number;
+    linesOfCode: number;
+    maintainabilityIndex: number;
+    technicalDebt: number;
+    codeSmells: any;
+    securityIssues: any;
+    performance: any;
+  }): Promise<void> {
+    await db.insert(codeMetrics).values({
+      userId,
+      ...metricsData
+    });
+  }
+
+  // Refactoring suggestions operations
+  async storeRefactoringSuggestion(userId: string, suggestionData: {
+    duplicateGroupId: number;
+    suggestionsType: string;
+    title: string;
+    description: string;
+    beforeCode: string;
+    afterCode: string;
+    estimatedEffort: string;
+    potentialSavings: number;
+    priority: number;
+  }): Promise<void> {
+    await db.insert(refactoringSuggestions).values({
+      userId,
+      ...suggestionData
+    });
+  }
+
+  // Helper methods
+  private getTimeFilter(timeRange: string): Date | null {
+    const now = new Date();
+    switch (timeRange) {
+      case '24h':
+        return new Date(now.getTime() - 24 * 60 * 60 * 1000);
+      case '7d':
+        return new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      case '30d':
+        return new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      case '90d':
+        return new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+      default:
+        return null;
+    }
+  }
+
+  private getLanguageColor(language: string): string {
+    const colors: Record<string, string> = {
+      javascript: '#f7df1e',
+      typescript: '#3178c6',
+      python: '#3776ab',
+      html: '#e34f26',
+      css: '#1572b6',
+      java: '#ed8b00',
+      csharp: '#239120',
+      php: '#777bb4',
+      ruby: '#cc342d',
+      go: '#00add8'
+    };
+    return colors[language.toLowerCase()] || '#6b7280';
   }
 }
 

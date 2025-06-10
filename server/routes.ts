@@ -221,6 +221,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         patternType
       });
       
+      // Store search history
+      await storage.addSearchHistory(userId, {
+        query,
+        filters: { language, patternType },
+        resultCount: searchResults.length,
+        executionTime: Date.now() - req.startTime
+      });
+      
       logger.info('Code pattern search completed', { 
         userId, 
         resultsCount: searchResults.length 
@@ -232,6 +240,229 @@ export async function registerRoutes(app: Express): Promise<Server> {
         error: (error as Error).message, 
         userId: req.user?.claims?.sub,
         searchParams: req.body 
+      });
+      next(error);
+    }
+  });
+
+  // Analytics routes
+  app.get('/api/analytics', isAuthenticated, async (req: any, res, next) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      if (!userId) {
+        throw new AppError('User ID not found', 401);
+      }
+
+      const { timeRange = '7d' } = req.query;
+      const analytics = await storage.getAnalytics(userId, timeRange);
+      
+      logger.info('Analytics fetched successfully', { userId, timeRange });
+      res.json(analytics);
+    } catch (error) {
+      logger.error('Error fetching analytics', { 
+        error: (error as Error).message, 
+        userId: req.user?.claims?.sub 
+      });
+      next(error);
+    }
+  });
+
+  // AI Analysis routes
+  app.post('/api/ai/analyze-similarity', isAuthenticated, async (req: any, res, next) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      if (!userId) {
+        throw new AppError('User ID not found', 401);
+      }
+
+      const { code1, code2, context } = req.body;
+      
+      if (!code1 || !code2) {
+        throw new AppError('Both code snippets are required', 400);
+      }
+
+      logger.info('Starting AI similarity analysis', { userId });
+      
+      const { aiAnalysisService } = await import('./aiAnalysis');
+      const analysis = await aiAnalysisService.analyzeSemanticSimilarity(code1, code2, context);
+      
+      // Store AI analysis result
+      await storage.storeAIAnalysis(userId, {
+        analysisType: 'semantic_similarity',
+        prompt: `Compare similarity between two code snippets`,
+        response: JSON.stringify(analysis),
+        confidence: analysis.similarity,
+        metadata: { context }
+      });
+      
+      logger.info('AI similarity analysis completed', { userId, similarity: analysis.similarity });
+      res.json(analysis);
+    } catch (error) {
+      logger.error('Error in AI similarity analysis', { 
+        error: (error as Error).message, 
+        userId: req.user?.claims?.sub 
+      });
+      next(error);
+    }
+  });
+
+  app.post('/api/ai/refactoring-suggestions', isAuthenticated, async (req: any, res, next) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      if (!userId) {
+        throw new AppError('User ID not found', 401);
+      }
+
+      const { duplicateGroupId } = req.body;
+      
+      if (!duplicateGroupId) {
+        throw new AppError('Duplicate group ID is required', 400);
+      }
+
+      logger.info('Generating refactoring suggestions', { userId, duplicateGroupId });
+      
+      const duplicateGroup = await storage.getDuplicateGroup(userId, duplicateGroupId);
+      if (!duplicateGroup) {
+        throw new AppError('Duplicate group not found', 404);
+      }
+
+      const { aiAnalysisService } = await import('./aiAnalysis');
+      const patterns = duplicateGroup.patterns.map(p => ({
+        code: p.codeSnippet,
+        filePath: p.filePath,
+        projectName: 'Project' // You might want to join with projects table
+      }));
+      
+      const suggestions = await aiAnalysisService.generateRefactoringSuggestions(patterns);
+      
+      // Store suggestions in database
+      for (const suggestion of suggestions) {
+        await storage.storeRefactoringSuggestion(userId, {
+          duplicateGroupId,
+          ...suggestion
+        });
+      }
+      
+      logger.info('Refactoring suggestions generated', { 
+        userId, 
+        duplicateGroupId, 
+        suggestionsCount: suggestions.length 
+      });
+      
+      res.json(suggestions);
+    } catch (error) {
+      logger.error('Error generating refactoring suggestions', { 
+        error: (error as Error).message, 
+        userId: req.user?.claims?.sub 
+      });
+      next(error);
+    }
+  });
+
+  // Code quality analysis
+  app.post('/api/analyze/quality', isAuthenticated, async (req: any, res, next) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      if (!userId) {
+        throw new AppError('User ID not found', 401);
+      }
+
+      const { code, language, filePath, projectId } = req.body;
+      
+      if (!code || !language) {
+        throw new AppError('Code and language are required', 400);
+      }
+
+      logger.info('Starting code quality analysis', { userId, language });
+      
+      const { aiAnalysisService } = await import('./aiAnalysis');
+      const qualityMetrics = await aiAnalysisService.analyzeCodeQuality(code, language);
+      
+      // Store quality metrics if projectId and filePath are provided
+      if (projectId && filePath) {
+        await storage.storeCodeMetrics(userId, {
+          projectId,
+          filePath,
+          ...qualityMetrics
+        });
+      }
+      
+      logger.info('Code quality analysis completed', { userId, complexity: qualityMetrics.complexity });
+      res.json(qualityMetrics);
+    } catch (error) {
+      logger.error('Error in code quality analysis', { 
+        error: (error as Error).message, 
+        userId: req.user?.claims?.sub 
+      });
+      next(error);
+    }
+  });
+
+  // Search history and saved searches
+  app.get('/api/search/history', isAuthenticated, async (req: any, res, next) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      if (!userId) {
+        throw new AppError('User ID not found', 401);
+      }
+
+      const history = await storage.getSearchHistory(userId);
+      logger.info('Search history fetched', { userId, count: history.length });
+      res.json(history);
+    } catch (error) {
+      logger.error('Error fetching search history', { 
+        error: (error as Error).message, 
+        userId: req.user?.claims?.sub 
+      });
+      next(error);
+    }
+  });
+
+  app.post('/api/search/save', isAuthenticated, async (req: any, res, next) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      if (!userId) {
+        throw new AppError('User ID not found', 401);
+      }
+
+      const { name, query, filters, isPublic = false } = req.body;
+      
+      if (!name || !query) {
+        throw new AppError('Name and query are required', 400);
+      }
+
+      const savedSearch = await storage.saveSearch(userId, {
+        name,
+        query,
+        filters,
+        isPublic
+      });
+      
+      logger.info('Search saved successfully', { userId, searchName: name });
+      res.json(savedSearch);
+    } catch (error) {
+      logger.error('Error saving search', { 
+        error: (error as Error).message, 
+        userId: req.user?.claims?.sub 
+      });
+      next(error);
+    }
+  });
+
+  app.get('/api/search/saved', isAuthenticated, async (req: any, res, next) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      if (!userId) {
+        throw new AppError('User ID not found', 401);
+      }
+
+      const savedSearches = await storage.getSavedSearches(userId);
+      logger.info('Saved searches fetched', { userId, count: savedSearches.length });
+      res.json(savedSearches);
+    } catch (error) {
+      logger.error('Error fetching saved searches', { 
+        error: (error as Error).message, 
+        userId: req.user?.claims?.sub 
       });
       next(error);
     }
