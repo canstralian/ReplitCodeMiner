@@ -55,7 +55,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Projects routes
-  app.get('/api/projects', isAuthenticated, validateRequest(refreshProjectsSchema), async (req: any, res, next) => {
+  app.get('/api/projects', isAuthenticated, async (req: any, res, next) => {
     try {
       const userId = req.user?.claims?.sub;
       if (!userId) {
@@ -107,7 +107,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/projects/analyze', isAuthenticated, validateRequest(projectAnalysisSchema), async (req: any, res, next) => {
+  app.post('/api/projects/analyze', isAuthenticated, async (req: any, res, next) => {
     try {
       const userId = req.user?.claims?.sub;
       if (!userId) {
@@ -192,7 +192,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/search', isAuthenticated, validateRequest(searchSchema), async (req: any, res, next) => {
+  app.post('/api/search', isAuthenticated, async (req: any, res, next) => {
     try {
       const userId = req.user?.claims?.sub;
       if (!userId) {
@@ -493,11 +493,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/ai/test/:providerName', async (req: any, res) => {
+  app.post('/api/ai/test/:provider', async (req: any, res) => {
     try {
       const { aiAnalysisService } = await import('./aiAnalysis');
-      const { providerName } = req.params;
-      const result = await aiAnalysisService.testProvider(providerName);
+      const { provider } = req.params;
+      const result = await aiAnalysisService.testProvider(provider);
       res.json(result);
     } catch (error) {
       logger.error('Failed to test AI provider', { error: (error as Error).message });

@@ -31,7 +31,7 @@ export const duplicateGroupSchema = z.object({
 });
 
 export function validateRequest(schema: z.ZodSchema) {
-  return (req: Request, res: Response, next: NextFunction) => {
+  return (req: Request, res: Response, next: NextFunction): void => {
     try {
       schema.parse({
         body: req.body,
@@ -46,10 +46,11 @@ export function validateRequest(schema: z.ZodSchema) {
           path: req.path,
           method: req.method 
         });
-        return res.status(400).json({
+        res.status(400).json({
           message: 'Validation error',
           errors: error.errors
         });
+        return;
       }
       next(error);
     }

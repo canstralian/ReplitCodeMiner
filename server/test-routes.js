@@ -20,7 +20,7 @@ const routes = [
   { method: 'get', path: '/api/search/saved' },
   { method: 'get', path: '/health' },
   { method: 'get', path: '/api/ai/providers' },
-  { method: 'post', path: '/api/ai/test/:providerName' },
+  { method: 'post', path: '/api/ai/test/:provider' },
   { method: 'get', path: '/api/login' },
   { method: 'get', path: '/api/callback' },
   { method: 'get', path: '/api/logout' }

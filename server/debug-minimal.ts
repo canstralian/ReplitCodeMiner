@@ -15,7 +15,7 @@ try {
   app.get('/api/duplicates/:groupId', (req, res) => res.json({ groupId: req.params.groupId }));
   console.log('✓ Parameter route 1 OK');
   
-  app.post('/api/ai/test/:providerName', (req, res) => res.json({ provider: req.params.providerName }));
+  app.post('/api/ai/test/:provider', (req, res) => res.json({ provider: req.params.provider }));
   console.log('✓ Parameter route 2 OK');
   
   console.log('✓ All routes registered successfully');
