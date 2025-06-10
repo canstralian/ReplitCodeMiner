@@ -2,8 +2,14 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { logger, AppError, logRequest } from "./logger";
+import { securityHeaders, corsHeaders } from "./security";
+import config from "./config";
 
 const app = express();
+
+// Security middleware
+app.use(securityHeaders);
+app.use(corsHeaders);
 
 // Request size limits for security
 app.use(express.json({ limit: '10mb' }));

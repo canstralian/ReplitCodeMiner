@@ -12,7 +12,7 @@ import { Search, SlidersHorizontal, Grid3X3, List } from "lucide-react";
 export default function Dashboard() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedLanguage, setSelectedLanguage] = useState("all");
-  const [viewMode, setViewMode<"grid" | "list">("grid");
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [selectedProjects, setSelectedProjects] = useState<string[]>([]);
   const [showComparison, setShowComparison] = useState(false);
 

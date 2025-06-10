@@ -124,7 +124,11 @@ export class DatabaseStorage implements IStorage {
     const [patternCount] = await db
       .select({ count: count() })
       .from(codePatterns)
-      .where(eq(codePatterns.userId, userId));
+      .where(eq(codePatterns.userId, userId))
+      .catch(err => {
+        logger.error('Error fetching pattern count', { error: err.message, userId });
+        throw new AppError('Database error', 500);
+      });
 
     const languageStats = await db
       .select({
@@ -133,7 +137,11 @@ export class DatabaseStorage implements IStorage {
       })
       .from(projects)
       .where(eq(projects.userId, userId))
-      .groupBy(projects.language);
+      .groupBy(projects.language)
+      .catch(err => {
+        logger.error('Error fetching language stats', { error: err.message, userId });
+        throw new AppError('Database error', 500);
+      });
 
     const languages: Record<string, number> = {};
     languageStats.forEach(stat => {
