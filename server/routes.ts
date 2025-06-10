@@ -6,7 +6,7 @@ import { ReplitApiService } from "./replitApi";
 import { insertProjectSchema } from "@shared/schema";
 import { z } from "zod";
 import { logger, AppError } from "./logger";
-// Validation imports temporarily removed to fix path-to-regexp error
+import { validateRequest, projectAnalysisSchema, searchSchema, refreshProjectsSchema, duplicateGroupSchema } from "./validation";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
