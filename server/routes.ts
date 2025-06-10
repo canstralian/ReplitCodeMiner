@@ -6,17 +6,15 @@ import { ReplitApiService } from "./replitApi";
 import { insertProjectSchema } from "@shared/schema";
 import { z } from "zod";
 import { logger, AppError } from "./logger";
-// Validation imports temporarily removed to fix path-to-regexp error
-// import { validateRequest, projectAnalysisSchema, searchSchema, refreshProjectsSchema, duplicateGroupSchema } from "./validation";
+import { validateRequest, projectAnalysisSchema, searchSchema, refreshProjectsSchema, duplicateGroupSchema } from "./validation";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Auth middleware temporarily disabled to fix path-to-regexp error
-  // await setupAuth(app);
+  await setupAuth(app);
 
   const replitApi = new ReplitApiService();
 
   // Auth routes
-  app.get('/api/auth/user', async (req: any, res, next) => {
+  app.get('/api/auth/user', isAuthenticated, async (req: any, res, next) => {
     try {
       const userId = req.user?.claims?.sub;
       if (!userId) {
@@ -57,7 +55,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Projects routes
-  app.get('/api/projects', async (req: any, res, next) => {
+  app.get('/api/projects', isAuthenticated, validateRequest(refreshProjectsSchema), async (req: any, res, next) => {
     try {
       const userId = req.user?.claims?.sub;
       if (!userId) {
@@ -90,7 +88,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/projects/stats', async (req: any, res, next) => {
+  app.get('/api/projects/stats', isAuthenticated, async (req: any, res, next) => {
     try {
       const userId = req.user?.claims?.sub;
       if (!userId) {
@@ -109,7 +107,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/projects/analyze', async (req: any, res, next) => {
+  app.post('/api/projects/analyze', isAuthenticated, validateRequest(projectAnalysisSchema), async (req: any, res, next) => {
     try {
       const userId = req.user?.claims?.sub;
       if (!userId) {
@@ -194,7 +192,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/search', async (req: any, res, next) => {
+  app.post('/api/search', isAuthenticated, validateRequest(searchSchema), async (req: any, res, next) => {
     try {
       const userId = req.user?.claims?.sub;
       if (!userId) {
