@@ -44,6 +44,17 @@ jobs:
         npm run build
         npm run bundle:analyze || true
         
+    - name: Advanced code analysis
+      run: |
+        # Type coverage analysis
+        npx type-coverage --detail --strict || true
+        
+        # Duplicate code detection
+        npx jscpd --reporters=json --output=./jscpd-report.json . || true
+        
+        # Dead code elimination check
+        npx ts-prune --error || true
+        
     - name: Detect secrets
       uses: trufflesecurity/trufflehog@main
       with:

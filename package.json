@@ -21,6 +21,12 @@
     "complexity": "npx madge --circular --extensions ts,tsx,js,jsx ./client/src ./server",
     "complexity:graph": "npx madge --image dependency-graph.svg --extensions ts,tsx,js,jsx ./client/src ./server",
     "bundle:analyze": "npx tsup --analyze",
+    "analyze:types": "npx type-coverage --detail",
+    "analyze:duplicates": "npx jscpd --reporters=console,json --output=./jscpd-report.json .",
+    "analyze:dead-code": "npx ts-prune",
+    "fix:all": "npm run lint:fix && npm run format && npm run deps:check",
+    "debug:build": "DEBUG=* npm run build",
+    "debug:test": "npm run test -- --reporter=verbose",
     "prepare": "husky install",
     "pre-commit": "lint-staged"
   },
