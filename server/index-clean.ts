@@ -95,7 +95,8 @@ app.get('/api/duplicates/:groupId', mockAuth, async (req: any, res, next) => {
     const duplicate = await storage.getDuplicateGroup(userId, parseInt(groupId));
     
     if (!duplicate) {
-      return res.status(404).json({ message: 'Duplicate group not found' });
+      res.status(404).json({ message: 'Duplicate group not found' });
+      return;
     }
     
     res.json(duplicate);
@@ -148,13 +149,13 @@ const server = createServer(app);
 
 (async () => {
   try {
-    if (config.NODE_ENV === "development") {
+    if (config.nodeEnv === "development") {
       await setupVite(app, server);
     } else {
       serveStatic(app);
     }
 
-    const port = config.PORT;
+    const port = config.port;
     server.listen(port, "0.0.0.0", () => {
       log(`Server running on port ${port}`);
     });
