@@ -1,0 +1,133 @@
+⸻
+
+🔍 Key Features
+
+Feature	Description
+App Indexing	Scan all your Repls via Replit’s API or local metadata
+Duplicate Detection	Detect identical or similar: code blocks, file structures, package configs, README text, themes, etc.
+Similarity Metrics	Use hash-based matching (e.g., SHA256), AST diffing, or fuzzy string/code comparison
+UI Panel	Side panel to list duplicates with filtering/sorting
+Click-to-Open	Open Repls or files in the editor directly from the extension panel
+
+
+⸻
+
+🛠️ Replit Extension Architecture
+
+1. Backend Logic (Worker / Sandbox)
+   •   Authenticate user via Replit Auth API (OAuth2).
+   •   Use the Replit GraphQL API or Replit DB to fetch metadata and content.
+   •   Optionally clone .replit and key source files from each Repl into memory.
+   •   Run:
+      •   Code hashing (e.g., hash of main.py, index.js)
+      •   Levenshtein distance or difflib.SequenceMatcher for fuzzy matches
+      •   AST-based Python/JS function comparison
+
+2. Frontend Panel (Replit Extension UI)
+   •   Custom sidebar using Replit’s Extension SDK
+   •   Table or tree view of Repls grouped by:
+      •   Code hash
+      •   Theme config (e.g., .replit or replit.nix)
+      •   Libraries used (from requirements.txt, package.json, etc.)
+   •   Buttons to open in tab or delete
+
+⸻
+
+📦 Project File Layout
+
+replit-extension/
+├── extension.json         # Replit Extension manifest
+├── ui/
+│   ├── index.html         # Panel UI
+│   ├── script.js          # Panel logic (calls backend)
+│   └── style.css
+├── backend/
+│   └── scan.py            # Auth + duplicate detection logic
+├── utils/
+│   └── comparer.py        # Fuzzy code comparison logic
+├── requirements.txt
+└── README.md
+
+
+⸻
+
+🧠 Logic Pseudocode (Python)
+
+# backend/scan.py
+import hashlib, os, requests
+from difflib import SequenceMatcher
+
+def get_repls(auth_token):
+    """Use Replit GraphQL API to fetch list of user's Repls"""
+    query = """
+    query {
+        currentUser {
+            repls(first: 100) {
+                items {
+                    id
+                    title
+                    url
+                    language
+                }
+            }
+        }
+    }"""
+    return requests.post(
+        'https://replit.com/graphql',
+        headers={'Authorization': f'Bearer {auth_token}'},
+        json={'query': query}
+    ).json()
+
+def hash_code(code):
+    return hashlib.sha256(code.encode()).hexdigest()
+
+def is_similar(code_a, code_b, threshold=0.9):
+    return SequenceMatcher(None, code_a, code_b).ratio() >= threshold
+
+
+⸻
+
+🧪 Code Duplicate Check Example
+
+# utils/comparer.py
+def find_duplicates(repls_data):
+    hashes = {}
+    duplicates = []
+    for repl in repls_data:
+        code = repl.get("main_code", "")
+        h = hash_code(code)
+        if h in hashes:
+            duplicates.append((repl, hashes[h]))
+        else:
+            hashes[h] = repl
+    return duplicates
+
+
+⸻
+
+🧩 UI Flow
+	1.	Launch extension
+	2.	Prompt for Replit Auth (if needed)
+	3.	Begin background indexing
+	4.	Show progress bar
+	5.	Display grouped duplicate reports
+	6.	Click a result → opens that Repl in editor
+
+⸻
+
+🔐 Security Considerations
+   •   Authenticate securely using Replit’s OAuth flow.
+   •   Avoid saving tokens long-term unless encrypted.
+   •   Sanitize all displayed data in the UI.
+   •   Ensure no unintended deletion or overwrite without confirmation.
+
+⸻
+
+📌 Next Steps
+
+If you’d like, I can generate:
+	1.	✅ The initial extension.json manifest
+	2.	✅ The React-free vanilla JS UI (or React-based if preferred)
+	3.	✅ A working scan.py prototype for use with Replit’s API
+	4.	✅ A complete utils/comparer.py module for detecting duplicates
+	5.	✅ Deployment guide to run and test the extension locally
