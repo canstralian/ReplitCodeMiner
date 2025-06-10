@@ -1,10 +1,29 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { logger, AppError, logRequest } from "./logger";
 
 const app = express();
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+
+// Request size limits for security
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: false, limit: '10mb' }));
+
+// Request timeout middleware
+app.use((req, res, next) => {
+  res.setTimeout(30000, () => {
+    logger.error('Request timeout', { path: req.path, method: req.method });
+    res.status(408).json({ message: 'Request timeout' });
+  });
+  next();
+});
+
+// Request tracking middleware
+app.use((req: any, res, next) => {
+  req.startTime = Date.now();
+  req.requestId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  next();
+});
 
 app.use((req, res, next) => {
   const start = Date.now();
@@ -39,12 +58,46 @@ app.use((req, res, next) => {
 (async () => {
   const server = await registerRoutes(app);
 
-  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-    const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
+  app.use((err: any, req: Request, res: Response, _next: NextFunction) => {
+    logger.error('Unhandled error', {
+      error: err.message,
+      stack: err.stack,
+      path: req.path,
+      method: req.method,
+      requestId: (req as any).requestId,
+      userId: (req as any).user?.claims?.sub
+    });
 
-    res.status(status).json({ message });
-    throw err;
+    if (err instanceof AppError) {
+      return res.status(err.statusCode).json({
+        message: err.message,
+        ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
+      });
+    }
+
+    // Handle known error types
+    if (err.name === 'ValidationError') {
+      return res.status(400).json({ message: 'Validation error', details: err.message });
+    }
+
+    if (err.name === 'UnauthorizedError') {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    if (err.code === 'ECONNREFUSED') {
+      return res.status(503).json({ message: 'Service temporarily unavailable' });
+    }
+
+    // Default error response
+    const status = err.status || err.statusCode || 500;
+    const message = process.env.NODE_ENV === 'development' 
+      ? err.message || "Internal Server Error"
+      : "Internal Server Error";
+
+    res.status(status).json({
+      message,
+      ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
+    });
   });
 
   // importantly only setup vite in development and after
@@ -66,5 +119,35 @@ app.use((req, res, next) => {
     reusePort: true,
   }, () => {
     log(`serving on port ${port}`);
+    logger.info('Server started successfully', { port, environment: process.env.NODE_ENV });
+  });
+
+  // Graceful shutdown
+  process.on('SIGTERM', () => {
+    logger.info('SIGTERM received, shutting down gracefully');
+    server.close(() => {
+      logger.info('Server closed');
+      process.exit(0);
+    });
+  });
+
+  process.on('SIGINT', () => {
+    logger.info('SIGINT received, shutting down gracefully');
+    server.close(() => {
+      logger.info('Server closed');
+      process.exit(0);
+    });
+  });
+
+  // Handle uncaught exceptions
+  process.on('uncaughtException', (err) => {
+    logger.error('Uncaught Exception', { error: err.message, stack: err.stack });
+    process.exit(1);
+  });
+
+  // Handle unhandled promise rejections
+  process.on('unhandledRejection', (reason, promise) => {
+    logger.error('Unhandled Rejection', { reason, promise });
+    process.exit(1);
   });
 })();

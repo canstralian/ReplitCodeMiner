@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import { logger, AppError } from './logger';
 
 export interface ReplitProject {
   id: string;
@@ -61,6 +62,12 @@ export class ReplitApiService {
     `;
 
     try {
+      if (!accessToken) {
+        throw new AppError('Access token is required', 401);
+      }
+
+      logger.debug('Fetching projects from Replit API');
+      
       const response = await fetch(this.GRAPHQL_ENDPOINT, {
         method: 'POST',
         headers: {
@@ -71,29 +78,49 @@ export class ReplitApiService {
       });
 
       if (!response.ok) {
-        throw new Error(`Failed to fetch projects: ${response.statusText}`);
+        if (response.status === 401) {
+          throw new AppError('Unauthorized access to Replit API', 401);
+        }
+        if (response.status === 429) {
+          throw new AppError('Rate limit exceeded', 429);
+        }
+        throw new AppError(`Failed to fetch projects: ${response.statusText}`, response.status);
       }
 
       const data = await response.json();
       
       if (data.errors) {
-        throw new Error(`GraphQL errors: ${JSON.stringify(data.errors)}`);
+        logger.error('GraphQL errors from Replit API', { errors: data.errors });
+        throw new AppError(`GraphQL errors: ${JSON.stringify(data.errors)}`, 400);
       }
 
       const repls = data.data?.currentUser?.repls?.items || [];
       
-      return repls.map((repl: any) => ({
-        id: repl.id,
-        title: repl.title,
-        url: repl.url,
-        language: repl.language,
-        description: repl.description,
-        fileCount: repl.fileCount || 0,
-        lastUpdated: repl.timeUpdated ? new Date(repl.timeUpdated) : new Date(),
-      }));
+      const projects = repls.map((repl: any) => {
+        if (!repl.id || !repl.title) {
+          logger.warn('Invalid repl data received', { repl });
+          return null;
+        }
+        
+        return {
+          id: repl.id,
+          title: repl.title,
+          url: repl.url || '',
+          language: repl.language || 'unknown',
+          description: repl.description || '',
+          fileCount: repl.fileCount || 0,
+          lastUpdated: repl.timeUpdated ? new Date(repl.timeUpdated) : new Date(),
+        };
+      }).filter(Boolean);
+
+      logger.info('Successfully fetched projects from Replit API', { count: projects.length });
+      return projects;
     } catch (error) {
-      console.error('Error fetching Replit projects:', error);
-      throw error;
+      logger.error('Error fetching Replit projects', { 
+        error: (error as Error).message,
+        stack: (error as Error).stack 
+      });
+      throw error instanceof AppError ? error : new AppError('Failed to fetch projects from Replit API', 500);
     }
   }
 
