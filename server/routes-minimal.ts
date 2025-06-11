@@ -159,3 +159,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
   return httpServer;
 }
+import type { Express } from "express";
+import { createServer, type Server } from "http";
+import { logger, AppError } from "./logger";
+
+export async function registerRoutes(app: Express): Promise<Server> {
+  // Health check endpoint
+  app.get('/health', (req, res) => {
+    res.json({ status: 'healthy', timestamp: new Date().toISOString() });
+  });
+
+  // Basic API endpoints
+  app.get('/api/status', (req, res) => {
+    res.json({ message: 'API is working' });
+  });
+
+  // Error handling middleware
+  app.use((err: any, req: any, res: any, next: any) => {
+    logger.error('Unhandled error', {
+      error: err.message,
+      stack: err.stack,
+      path: req.path,
+      method: req.method,
+    });
+
+    if (err instanceof AppError) {
+      res.status(err.statusCode).json({
+        message: err.message,
+        ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
+      });
+      return;
+    }
+
+    const status = err.status || err.statusCode || 500;
+    const message = process.env.NODE_ENV === 'development' 
+      ? err.message || "Internal Server Error"
+      : "Internal Server Error";
+
+    res.status(status).json({
+      message,
+      ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
+    });
+  });
+
+  const httpServer = createServer(app);
+  return httpServer;
+}
