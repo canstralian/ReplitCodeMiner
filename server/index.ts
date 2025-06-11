@@ -138,68 +138,22 @@ app.use((err: any, req: express.Request, res: express.Response, _next: express.N
 
 
 
-// Development: Start Vite dev server and proxy frontend requests
-if (process.env.NODE_ENV === 'development') {
-  const { spawn } = await import('child_process');
-  
-  // Start Vite dev server
-  const viteProcess = spawn('npx', ['vite', '--port', '5173', '--host'], {
-    stdio: 'pipe',
-    cwd: process.cwd()
-  });
-  
-  viteProcess.stdout?.on('data', (data) => {
-    console.log(`[Vite] ${data}`);
-  });
-  
-  viteProcess.stderr?.on('data', (data) => {
-    console.error(`[Vite Error] ${data}`);
-  });
-  
-  // Proxy non-API requests to Vite
-  app.use((req, res, next) => {
-    if (req.path.startsWith('/api/') || req.path === '/health') {
-      return next();
-    }
-    
-    // Proxy to Vite dev server
-    import('http').then(http => {
-      const proxyReq = http.request({
-        hostname: 'localhost',
-        port: 5173,
-        path: req.path,
-        method: req.method,
-        headers: req.headers
-      }, (proxyRes) => {
-        res.writeHead(proxyRes.statusCode || 200, proxyRes.headers);
-        proxyRes.pipe(res);
-      });
-      
-      proxyReq.on('error', () => {
-        res.status(503).send('Frontend development server starting...');
-      });
-      
-      if (req.method !== 'GET' && req.method !== 'HEAD') {
-        req.pipe(proxyReq);
-      } else {
-        proxyReq.end();
-      }
-    });
-  });
-} else {
-  // Production: serve static files
-  const distPath = path.resolve(import.meta.dirname, "..", "dist", "public");
-  app.use(express.static(distPath));
-  
-  app.get('*', (req, res) => {
-    const indexPath = path.join(distPath, 'index.html');
-    if (fs.existsSync(indexPath)) {
-      res.sendFile(indexPath);
-    } else {
-      res.status(404).send('Build files not found');
-    }
-  });
-}
+// Simple development setup - serve client files directly
+const clientPath = path.resolve(import.meta.dirname, "..", "client");
+
+// Serve static files from client directory
+app.use(express.static(clientPath));
+
+// Serve main HTML file for SPA routes
+app.get('/', (req, res) => {
+  const indexPath = path.join(clientPath, 'index.html');
+  res.sendFile(indexPath);
+});
+
+app.get('/dashboard', (req, res) => {
+  const indexPath = path.join(clientPath, 'index.html');
+  res.sendFile(indexPath);
+});
 
 async function startServer() {
   try {
