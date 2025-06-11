@@ -192,7 +192,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/search', isAuthenticated, validateRequest(searchSchema), async (req: any, res, next) => {
+  app.post('/api/search', isAuthenticated, async (req: any, res, next) => {
     try {
       const userId = req.user?.claims?.sub;
       if (!userId) {
