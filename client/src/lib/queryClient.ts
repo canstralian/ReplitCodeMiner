@@ -1,8 +1,12 @@
 import { QueryClient } from "@tanstack/react-query";
 
+// API base URL for development
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
+
 // Default fetcher function for all queries
 const defaultQueryFn = async ({ queryKey }: { queryKey: readonly unknown[] }) => {
-  const url = queryKey[0] as string;
+  const endpoint = queryKey[0] as string;
+  const url = endpoint.startsWith('http') ? endpoint : `${API_BASE_URL}${endpoint}`;
   const response = await fetch(url, {
     credentials: "include", // Include cookies for authentication
   });
@@ -15,7 +19,8 @@ const defaultQueryFn = async ({ queryKey }: { queryKey: readonly unknown[] }) =>
 };
 
 // API request function for mutations
-export const apiRequest = async (url: string, options: RequestInit = {}) => {
+export const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
+  const url = endpoint.startsWith('http') ? endpoint : `${API_BASE_URL}${endpoint}`;
   const response = await fetch(url, {
     credentials: "include",
     headers: {
