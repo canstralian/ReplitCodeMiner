@@ -1,276 +1,290 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import Header from "@/components/header";
-import Sidebar from "@/components/sidebar";
-import ProjectCard from "@/components/project-card";
-import ComparisonModal from "@/components/comparison-modal";
-import CodeDiffViewer from "@/components/code-diff-viewer";
-import AnalyticsDashboard from "@/components/analytics-dashboard";
-import AdvancedSearch from "@/components/advanced-search";
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, SlidersHorizontal, Grid3X3, List, BarChart3, Brain } from "lucide-react";
+import { Code2, Search, RefreshCw, AlertCircle, TrendingUp, GitBranch, Users, Clock, Database } from "lucide-react";
 
 export default function Dashboard() {
+  const { user, isAuthenticated } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedLanguage, setSelectedLanguage] = useState("all");
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-  const [selectedProjects, setSelectedProjects] = useState<string[]>([]);
-  const [showComparison, setShowComparison] = useState(false);
-  const [selectedDuplicateGroup, setSelectedDuplicateGroup] = useState<any>(null);
-  const [showDiffViewer, setShowDiffViewer] = useState(false);
-  const [activeTab, setActiveTab] = useState("projects");
 
   // Fetch projects
-  const { data: projects = [], isLoading: projectsLoading, refetch: refetchProjects } = useQuery({
+  const { data: projects = [], isLoading: projectsLoading, error: projectsError, refetch: refetchProjects } = useQuery({
     queryKey: ["/api/projects"],
+    enabled: isAuthenticated,
   });
 
   // Fetch project stats
-  const { data: stats } = useQuery({
+  const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ["/api/projects/stats"],
+    enabled: isAuthenticated,
   });
 
   // Fetch duplicates
-  const { data: duplicates = [] } = useQuery({
+  const { data: duplicates = [], isLoading: duplicatesLoading } = useQuery({
     queryKey: ["/api/duplicates"],
+    enabled: isAuthenticated,
   });
 
-  const handleRefreshProjects = async () => {
-    await refetchProjects();
-  };
-
-  const handleProjectSelect = (projectId: string) => {
-    setSelectedProjects(prev => 
-      prev.includes(projectId) 
-        ? prev.filter(id => id !== projectId)
-        : [...prev, projectId]
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <Card className="w-full max-w-md text-center">
+          <CardHeader>
+            <Code2 className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+            <CardTitle>Authentication Required</CardTitle>
+            <CardDescription>
+              Please sign in with your Replit account to access the dashboard.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button className="w-full">
+              Sign In with Replit
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
     );
-  };
-
-  const handleCompareProjects = () => {
-    if (selectedProjects.length >= 2) {
-      setShowComparison(true);
-    }
-  };
-
-  const filteredProjects = (projects as any[] || []).filter((project: any) => {
-    const matchesSearch = !searchQuery || 
-      project.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      project.description?.toLowerCase().includes(searchQuery.toLowerCase());
-
-    const matchesLanguage = selectedLanguage === "all" || 
-      project.language?.toLowerCase() === selectedLanguage.toLowerCase();
-
-    return matchesSearch && matchesLanguage;
-  });
+  }
 
   return (
-    <div className="min-h-screen bg-editor-dark">
-      <Header />
+    <div className="min-h-screen bg-background">
+      <div className="container mx-auto p-6 space-y-6">
+        {/* Welcome Section */}
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold">Dashboard</h1>
+            <p className="text-muted-foreground">
+              Welcome back{user?.firstName ? `, ${user.firstName}` : ''}! Analyze your Replit projects for code patterns.
+            </p>
+          </div>
+          <Button onClick={() => refetchProjects()} disabled={projectsLoading}>
+            <RefreshCw className={`h-4 w-4 mr-2 ${projectsLoading ? 'animate-spin' : ''}`} />
+            Refresh Projects
+          </Button>
+        </div>
 
-      <div className="flex h-screen pt-16">
-        <Sidebar 
-          stats={stats as any}
-          duplicates={duplicates as any[]}
-          onRefresh={handleRefreshProjects}
-        />
-
-        <main className="flex-1 overflow-hidden">
-          {/* Main Navigation Tabs */}
-          <div className="bg-navy-dark border-b border-gray-700">
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <div className="px-4 py-2">
-                <TabsList className="bg-editor-dark">
-                  <TabsTrigger value="projects" className="flex items-center">
-                    <Grid3X3 className="h-4 w-4 mr-2" />
-                    Projects
-                  </TabsTrigger>
-                  <TabsTrigger value="search" className="flex items-center">
-                    <Search className="h-4 w-4 mr-2" />
-                    Advanced Search
-                  </TabsTrigger>
-                  <TabsTrigger value="analytics" className="flex items-center">
-                    <BarChart3 className="h-4 w-4 mr-2" />
-                    Analytics
-                  </TabsTrigger>
-                </TabsList>
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Projects</CardTitle>
+              <Database className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {statsLoading ? <Skeleton className="h-8 w-16" /> : stats?.totalProjects || 0}
               </div>
+              <p className="text-xs text-muted-foreground">
+                Connected repositories
+              </p>
+            </CardContent>
+          </Card>
 
-              <div className="flex-1 overflow-y-auto">
-                <TabsContent value="projects" className="p-6 space-y-6 mt-0">
-                  {/* Search Header */}
-                  <div className="bg-navy-dark border border-gray-700 rounded-lg p-4">
-                    <div className="flex flex-col sm:flex-row gap-4">
-                      <div className="flex-1 relative">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                        <Input
-                          type="text"
-                          placeholder="Search for code patterns, function names, or themes..."
-                          value={searchQuery}
-                          onChange={(e) => setSearchQuery(e.target.value)}
-                          className="pl-10 bg-editor-dark border-gray-600 text-white placeholder-gray-400 focus:ring-replit-orange focus:border-replit-orange"
-                        />
-                      </div>
-                      <div className="flex space-x-2">
-                        <Select value={selectedLanguage} onValueChange={setSelectedLanguage}>
-                          <SelectTrigger className="w-40 bg-editor-dark border-gray-600 text-white">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="all">All Languages</SelectItem>
-                            <SelectItem value="javascript">JavaScript</SelectItem>
-                            <SelectItem value="python">Python</SelectItem>
-                            <SelectItem value="html">HTML/CSS</SelectItem>
-                            <SelectItem value="typescript">TypeScript</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <Button className="bg-replit-orange hover:bg-orange-600">
-                          <SlidersHorizontal className="h-4 w-4 mr-2" />
-                          Filters
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Duplicates Found</CardTitle>
+              <GitBranch className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {statsLoading ? <Skeleton className="h-8 w-16" /> : stats?.duplicatesFound || 0}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Code patterns identified
+              </p>
+            </CardContent>
+          </Card>
 
-                  {/* Results Header */}
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h2 className="text-2xl font-semibold mb-1 text-white">Your Projects</h2>
-                      <p className="text-gray-400">
-                        Found <span className="text-replit-orange font-medium">{filteredProjects.length}</span> projects
-                      </p>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Button
-                        variant={viewMode === "grid" ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => setViewMode("grid")}
-                        className={viewMode === "grid" ? "bg-replit-orange" : "border-gray-600"}
-                      >
-                        <Grid3X3 className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant={viewMode === "list" ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => setViewMode("list")}
-                        className={viewMode === "list" ? "bg-replit-orange" : "border-gray-600"}
-                      >
-                        <List className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Similar Patterns</CardTitle>
+              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {statsLoading ? <Skeleton className="h-8 w-16" /> : stats?.similarPatterns || 0}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Potential refactoring opportunities
+              </p>
+            </CardContent>
+          </Card>
 
-                  {/* Selected Projects Actions */}
-                  {selectedProjects.length > 0 && (
-                    <div className="p-4 bg-navy-dark rounded-lg border border-gray-700">
-                      <div className="flex items-center justify-between">
-                        <span className="text-gray-300">
-                          {selectedProjects.length} project{selectedProjects.length !== 1 ? 's' : ''} selected
-                        </span>
-                        <div className="flex space-x-2">
-                          <Button
-                            onClick={handleCompareProjects}
-                            disabled={selectedProjects.length < 2}
-                            className="bg-accent-blue hover:bg-blue-500"
-                          >
-                            Compare Selected
-                          </Button>
-                          <Button
-                            onClick={() => setSelectedProjects([])}
-                            variant="outline"
-                            className="border-gray-600"
-                          >
-                            Clear Selection
-                          </Button>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Languages</CardTitle>
+              <Code2 className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {statsLoading ? <Skeleton className="h-8 w-16" /> : Object.keys(stats?.languages || {}).length}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Programming languages detected
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Main Content Tabs */}
+        <Tabs defaultValue="projects" className="space-y-4">
+          <TabsList>
+            <TabsTrigger value="projects">Projects</TabsTrigger>
+            <TabsTrigger value="duplicates">Duplicates</TabsTrigger>
+            <TabsTrigger value="search">Search</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="projects" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Your Projects</CardTitle>
+                <CardDescription>
+                  Replit projects connected to your account
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {projectsLoading ? (
+                  <div className="space-y-4">
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="flex items-center space-x-4">
+                        <Skeleton className="h-12 w-12 rounded" />
+                        <div className="space-y-2 flex-1">
+                          <Skeleton className="h-4 w-1/4" />
+                          <Skeleton className="h-4 w-1/2" />
                         </div>
                       </div>
-                    </div>
-                  )}
-
-                  {/* Projects Grid */}
-                  {projectsLoading ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {[...Array(6)].map((_, i) => (
-                        <div key={i} className="bg-navy-dark rounded-xl border border-gray-700 p-4">
-                          <div className="animate-pulse">
-                            <div className="h-32 bg-gray-700 rounded mb-4"></div>
-                            <div className="h-4 bg-gray-700 rounded mb-2"></div>
-                            <div className="h-3 bg-gray-700 rounded mb-4"></div>
-                            <div className="flex space-x-2">
-                              <div className="h-8 bg-gray-700 rounded flex-1"></div>
-                              <div className="h-8 bg-gray-700 rounded w-20"></div>
+                    ))}
+                  </div>
+                ) : projectsError ? (
+                  <div className="text-center py-8">
+                    <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <p className="text-muted-foreground">Failed to load projects</p>
+                    <Button variant="outline" onClick={() => refetchProjects()}>
+                      Try Again
+                    </Button>
+                  </div>
+                ) : projects.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Code2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <p className="text-muted-foreground">No projects found</p>
+                    <p className="text-sm text-muted-foreground">
+                      Connect your Replit account to start analyzing projects
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {projects.map((project: any) => (
+                      <Card key={project.id} className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-3">
+                            <div className="h-10 w-10 bg-primary/10 rounded flex items-center justify-center">
+                              <Code2 className="h-5 w-5 text-primary" />
+                            </div>
+                            <div>
+                              <h3 className="font-medium">{project.title}</h3>
+                              <p className="text-sm text-muted-foreground">
+                                {project.language} • {project.fileCount || 0} files
+                              </p>
                             </div>
                           </div>
+                          <div className="flex items-center space-x-2">
+                            <Badge variant="secondary">{project.language}</Badge>
+                            <Button variant="outline" size="sm">
+                              Analyze
+                            </Button>
+                          </div>
                         </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className={viewMode === "grid" 
-                      ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" 
-                      : "space-y-4"
-                    }>
-                      {filteredProjects.map((project: any) => (
-                        <ProjectCard
-                          key={project.id}
-                          project={project}
-                          isSelected={selectedProjects.includes(project.id.toString())}
-                          onSelect={() => handleProjectSelect(project.id.toString())}
-                          viewMode={viewMode}
-                        />
-                      ))}
-                    </div>
-                  )}
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-                  {filteredProjects.length === 0 && !projectsLoading && (
-                    <div className="text-center py-12">
-                      <Search className="h-12 w-12 text-gray-500 mx-auto mb-4" />
-                      <h3 className="text-lg font-medium text-gray-300 mb-2">No projects found</h3>
-                      <p className="text-gray-500">
-                        {searchQuery ? "Try adjusting your search criteria" : "Connect to Replit to load your projects"}
-                      </p>
-                    </div>
-                  )}
-                </TabsContent>
+          <TabsContent value="duplicates" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Duplicate Code Patterns</CardTitle>
+                <CardDescription>
+                  Similar code blocks found across your projects
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {duplicatesLoading ? (
+                  <div className="space-y-4">
+                    {[1, 2, 3].map((i) => (
+                      <Skeleton key={i} className="h-24 w-full" />
+                    ))}
+                  </div>
+                ) : duplicates.length === 0 ? (
+                  <div className="text-center py-8">
+                    <GitBranch className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <p className="text-muted-foreground">No duplicates found yet</p>
+                    <p className="text-sm text-muted-foreground">
+                      Run analysis on your projects to find duplicate patterns
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {duplicates.map((duplicate: any, index: number) => (
+                      <Card key={index} className="p-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <Badge variant="outline">
+                            {duplicate.similarityScore}% similarity
+                          </Badge>
+                          <Badge>{duplicate.patternType}</Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground mb-2">
+                          {duplicate.description}
+                        </p>
+                        <Button variant="outline" size="sm">
+                          View Details
+                        </Button>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-                <TabsContent value="search" className="p-6 mt-0">
-                  <AdvancedSearch 
-                    onResultSelect={(result) => {
-                      console.log('Selected search result:', result);
-                      // Handle result selection - could open diff viewer, navigate to code, etc.
-                    }}
+          <TabsContent value="search" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Search Code Patterns</CardTitle>
+                <CardDescription>
+                  Find specific code patterns across your projects
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex space-x-2 mb-6">
+                  <Input
+                    placeholder="Search for functions, classes, or patterns..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="flex-1"
                   />
-                </TabsContent>
-
-                <TabsContent value="analytics" className="p-6 mt-0">
-                  <AnalyticsDashboard />
-                </TabsContent>
-              </div>
-            </Tabs>
-          </div>
-        </main>
+                  <Button>
+                    <Search className="h-4 w-4 mr-2" />
+                    Search
+                  </Button>
+                </div>
+                <div className="text-center py-8">
+                  <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground">Enter a search query to find code patterns</p>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
-
-      {/* Comparison Modal */}
-      {showComparison && (
-        <ComparisonModal
-          projectIds={selectedProjects}
-          onClose={() => setShowComparison(false)}
-        />
-      )}
-
-      {/* Code Diff Viewer */}
-      {showDiffViewer && selectedDuplicateGroup && (
-        <CodeDiffViewer
-          duplicateGroup={selectedDuplicateGroup}
-          onClose={() => {
-            setShowDiffViewer(false);
-            setSelectedDuplicateGroup(null);
-          }}
-        />
-      )}
     </div>
   );
 }

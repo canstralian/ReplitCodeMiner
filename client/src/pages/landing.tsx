@@ -1,133 +1,120 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Code2, Search, GitBranch, Zap } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Code2, Search, GitBranch, Zap, Shield, Clock } from "lucide-react";
 
 export default function Landing() {
-  const handleLogin = () => {
-    window.location.href = "/api/login";
-  };
-
   return (
-    <div className="min-h-screen bg-editor-dark">
-      {/* Header */}
-      <header className="bg-navy-dark border-b border-gray-700">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-2">
-              <Code2 className="text-replit-orange text-2xl" />
-              <h1 className="text-xl font-semibold text-white">Replit Project Analyzer</h1>
-            </div>
-            <Button onClick={handleLogin} className="bg-replit-orange hover:bg-orange-600">
-              Connect to Replit
+    <div className="min-h-screen bg-gradient-to-br from-background to-muted/20">
+      {/* Hero Section */}
+      <div className="container mx-auto px-4 py-16">
+        <div className="text-center space-y-6 max-w-4xl mx-auto">
+          <Badge variant="secondary" className="mb-4">
+            <Zap className="h-3 w-3 mr-1" />
+            Powered by AI Analysis
+          </Badge>
+          
+          <h1 className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+            Find Duplicate Code Patterns
+          </h1>
+          
+          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+            Analyze your Replit projects to identify duplicate code patterns, 
+            improve code quality, and accelerate development with intelligent refactoring suggestions.
+          </p>
+          
+          <div className="flex flex-col sm:flex-row gap-4 justify-center mt-8">
+            <Link href="/dashboard">
+              <Button size="lg" className="w-full sm:w-auto">
+                <Code2 className="h-5 w-5 mr-2" />
+                Start Analysis
+              </Button>
+            </Link>
+            <Button variant="outline" size="lg" className="w-full sm:w-auto">
+              <GitBranch className="h-5 w-5 mr-2" />
+              View Demo
             </Button>
           </div>
         </div>
-      </header>
+      </div>
 
-      {/* Hero Section */}
-      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-12 sm:py-20">
-        <div className="text-center">
-          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4 sm:mb-6 leading-tight">
-            Find Duplicate Code
-            <span className="block text-replit-orange mt-1 sm:mt-2">Across Your Repls</span>
-          </h1>
-          <p className="text-base sm:text-lg md:text-xl text-gray-300 mb-6 sm:mb-8 max-w-2xl lg:max-w-3xl mx-auto px-2 leading-relaxed">
-            Connect your Replit account to automatically scan all your projects, identify duplicate code patterns, 
-            and discover opportunities to optimize your codebase.
+      {/* Features Section */}
+      <div className="container mx-auto px-4 py-16">
+        <div className="text-center mb-12">
+          <h2 className="text-3xl font-bold mb-4">Key Features</h2>
+          <p className="text-muted-foreground max-w-2xl mx-auto">
+            Comprehensive code analysis tools to help you maintain clean, efficient codebases
           </p>
-          <Button 
-            onClick={handleLogin}
-            size="lg"
-            className="bg-replit-orange hover:bg-orange-600 text-white px-6 py-3 sm:px-8 sm:py-4 text-base sm:text-lg w-full sm:w-auto max-w-xs sm:max-w-none"
-          >
-            Get Started Free
-          </Button>
         </div>
 
-        {/* Features Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mt-12 sm:mt-20">
-          <Card className="bg-navy-dark border-gray-700 hover:border-replit-orange transition-colors p-4 sm:p-6">
-            <CardHeader className="pb-3 sm:pb-4">
-              <Search className="w-6 h-6 sm:w-8 sm:h-8 text-accent-blue mb-1 sm:mb-2" />
-              <CardTitle className="text-white text-lg sm:text-xl">Smart Analysis</CardTitle>
+        <div className="grid md:grid-cols-3 gap-6">
+          <Card className="border-2 hover:border-primary/50 transition-colors">
+            <CardHeader>
+              <Search className="h-8 w-8 text-primary mb-2" />
+              <CardTitle>Smart Detection</CardTitle>
+              <CardDescription>
+                Advanced pattern recognition to find exact and similar code duplicates across your projects
+              </CardDescription>
             </CardHeader>
-            <CardContent className="pt-0">
-              <p className="text-gray-300 text-sm sm:text-base leading-relaxed">
-                Advanced pattern recognition to detect similar code structures, functions, and components.
-              </p>
+            <CardContent>
+              <ul className="space-y-2 text-sm text-muted-foreground">
+                <li>• Function-level analysis</li>
+                <li>• Cross-file detection</li>
+                <li>• Semantic similarity matching</li>
+              </ul>
             </CardContent>
           </Card>
 
-          <Card className="bg-navy-dark border-gray-700 hover:border-replit-orange transition-colors">
+          <Card className="border-2 hover:border-primary/50 transition-colors">
             <CardHeader>
-              <GitBranch className="w-8 h-8 text-success-green mb-2" />
-              <CardTitle className="text-white">Cross-Project Search</CardTitle>
+              <Code2 className="h-8 w-8 text-primary mb-2" />
+              <CardTitle>Refactoring Suggestions</CardTitle>
+              <CardDescription>
+                AI-powered recommendations to extract common patterns into reusable components
+              </CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-gray-300">
-                Search for specific patterns, functions, or themes across all your Replit projects at once.
-              </p>
+              <ul className="space-y-2 text-sm text-muted-foreground">
+                <li>• Extract functions</li>
+                <li>• Create modules</li>
+                <li>• Template generation</li>
+              </ul>
             </CardContent>
           </Card>
 
-          <Card className="bg-navy-dark border-gray-700 hover:border-replit-orange transition-colors">
+          <Card className="border-2 hover:border-primary/50 transition-colors">
             <CardHeader>
-              <Code2 className="w-8 h-8 text-replit-orange mb-2" />
-              <CardTitle className="text-white">Side-by-Side Compare</CardTitle>
+              <Shield className="h-8 w-8 text-primary mb-2" />
+              <CardTitle>Quality Metrics</CardTitle>
+              <CardDescription>
+                Comprehensive code quality analysis with maintainability scores and technical debt tracking
+              </CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-gray-300">
-                Visual comparison interface with syntax highlighting to review similar code blocks.
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-navy-dark border-gray-700 hover:border-replit-orange transition-colors">
-            <CardHeader>
-              <Zap className="w-8 h-8 text-yellow-400 mb-2" />
-              <CardTitle className="text-white">Instant Results</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-gray-300">
-                Fast analysis powered by intelligent algorithms to quickly identify optimization opportunities.
-              </p>
+              <ul className="space-y-2 text-sm text-muted-foreground">
+                <li>• Complexity analysis</li>
+                <li>• Security issue detection</li>
+                <li>• Performance recommendations</li>
+              </ul>
             </CardContent>
           </Card>
         </div>
+      </div>
 
-        {/* Stats Section */}
-        <div className="mt-20 text-center">
-          <div className="grid md:grid-cols-3 gap-8">
-            <div>
-              <div className="text-4xl font-bold text-replit-orange mb-2">50+</div>
-              <div className="text-gray-300">File Types Supported</div>
-            </div>
-            <div>
-              <div className="text-4xl font-bold text-accent-blue mb-2">95%</div>
-              <div className="text-gray-300">Pattern Accuracy</div>
-            </div>
-            <div>
-              <div className="text-4xl font-bold text-success-green mb-2">10s</div>
-              <div className="text-gray-300">Average Scan Time</div>
-            </div>
-          </div>
-        </div>
-
-        {/* CTA Section */}
-        <div className="mt-20 text-center bg-navy-dark rounded-2xl p-12">
-          <h2 className="text-3xl font-bold text-white mb-4">
-            Ready to Optimize Your Code?
-          </h2>
-          <p className="text-gray-300 mb-8 text-lg">
-            Connect your Replit account and start discovering duplicate patterns in minutes.
+      {/* CTA Section */}
+      <div className="bg-muted/50 py-16">
+        <div className="container mx-auto px-4 text-center">
+          <h2 className="text-3xl font-bold mb-4">Ready to Clean Your Code?</h2>
+          <p className="text-muted-foreground mb-8 max-w-2xl mx-auto">
+            Connect your Replit account and start analyzing your projects in minutes
           </p>
-          <Button 
-            onClick={handleLogin}
-            size="lg"
-            className="bg-replit-orange hover:bg-orange-600 text-white px-8 py-4 text-lg"
-          >
-            Connect to Replit Now
-          </Button>
+          <Link href="/dashboard">
+            <Button size="lg">
+              <Clock className="h-5 w-5 mr-2" />
+              Get Started Now
+            </Button>
+          </Link>
         </div>
       </div>
     </div>
