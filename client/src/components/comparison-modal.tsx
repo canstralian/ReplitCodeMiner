@@ -1,110 +1,121 @@
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { X, Copy, ExternalLink } from "lucide-react";
 
 interface ComparisonModalProps {
-  isOpen: boolean;
+  projectIds: string[];
   onClose: () => void;
-  duplicate: {
-    id: string;
-    files: Array<{
-      path: string;
-      content: string;
-      similarity: number;
-    }>;
-    type: string;
-    description: string;
-  } | null;
 }
 
-export default function ComparisonModal({ isOpen, onClose, duplicate }: ComparisonModalProps) {
-  const isMobile = useIsMobile();
+export default function ComparisonModal({ projectIds, onClose }: ComparisonModalProps) {
+  // Mock comparison data
+  const comparisonData = {
+    similarities: [
+      {
+        type: "Function",
+        name: "calculateTotal",
+        similarity: 95,
+        projects: ["Project A", "Project B"],
+        description: "Similar function for calculating totals"
+      },
+      {
+        type: "Component",
+        name: "UserCard",
+        similarity: 87,
+        projects: ["Project A", "Project C"],
+        description: "React component with similar structure"
+      }
+    ]
+  };
 
-  if (!duplicate) return null;
+  return (
+    <Dialog open={true} onOpenChange={onClose}>
+      <DialogContent className="max-w-4xl bg-navy-dark border-gray-700 text-white">
+        <DialogHeader>
+          <div className="flex items-center justify-between">
+            <DialogTitle className="text-xl text-white">
+              Project Comparison ({projectIds.length} projects)
+            </DialogTitle>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onClose}
+              className="text-gray-400 hover:text-white"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        </DialogHeader>
 
-  const MobileLayout = () => (
-    <Tabs defaultValue="file-0" className="w-full">
-      <TabsList className="grid w-full grid-cols-2 bg-gray-800">
-        {duplicate.files.slice(0, 2).map((file, index) => (
-          <TabsTrigger 
-            key={index} 
-            value={`file-${index}`} 
-            className="text-xs truncate max-w-full"
-          >
-            {file.path.split('/').pop() || `File ${index + 1}`}
-          </TabsTrigger>
-        ))}
-      </TabsList>
+        <div className="space-y-6">
+          {/* Comparison Results */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-white">Similar Patterns Found</h3>
+            
+            {comparisonData.similarities.map((similarity, index) => (
+              <div key={index} className="p-4 bg-editor-dark rounded-lg border border-gray-600">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-center space-x-3">
+                    <Copy className="h-5 w-5 text-replit-orange" />
+                    <div>
+                      <h4 className="text-white font-medium">{similarity.name}</h4>
+                      <p className="text-gray-400 text-sm">{similarity.description}</p>
+                    </div>
+                  </div>
+                  <Badge className="bg-replit-orange text-white">
+                    {similarity.similarity}% match
+                  </Badge>
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-gray-400 text-sm">Found in:</span>
+                    {similarity.projects.map((project, idx) => (
+                      <Badge key={idx} variant="outline" className="border-gray-600 text-gray-300">
+                        {project}
+                      </Badge>
+                    ))}
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-accent-blue hover:text-blue-400"
+                  >
+                    <ExternalLink className="h-4 w-4 mr-1" />
+                    View Details
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
 
-      {duplicate.files.slice(0, 2).map((file, index) => (
-        <TabsContent key={index} value={`file-${index}`} className="mt-3">
-          <div className="mb-2">
-            <div className="flex flex-col space-y-1">
-              <h3 className="text-xs font-medium text-gray-300 truncate">
-                {file.path}
-              </h3>
-              <Badge className="bg-replit-orange text-white text-xs w-fit">
-                {Math.round(file.similarity)}% similar
-              </Badge>
+          {/* Summary */}
+          <div className="p-4 bg-editor-dark rounded-lg border border-gray-600">
+            <h3 className="text-white font-medium mb-2">Comparison Summary</h3>
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <span className="text-gray-400">Similar patterns:</span>
+                <span className="text-replit-orange ml-2">{comparisonData.similarities.length}</span>
+              </div>
+              <div>
+                <span className="text-gray-400">Average similarity:</span>
+                <span className="text-success-green ml-2">
+                  {Math.round(comparisonData.similarities.reduce((acc, s) => acc + s.similarity, 0) / comparisonData.similarities.length)}%
+                </span>
+              </div>
             </div>
           </div>
 
-          <ScrollArea className="h-[50vh] bg-editor-dark rounded border border-gray-600">
-            <pre className="p-3 text-xs text-gray-300 font-mono whitespace-pre-wrap leading-relaxed">
-              {file.content}
-            </pre>
-          </ScrollArea>
-        </TabsContent>
-      ))}
-    </Tabs>
-  );
-
-  const DesktopLayout = () => (
-    <div className="grid grid-cols-2 gap-4 h-[70vh]">
-      {duplicate.files.slice(0, 2).map((file, index) => (
-        <div key={index} className="flex flex-col">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-medium text-gray-300 truncate">
-              {file.path}
-            </h3>
-            <Badge className="bg-replit-orange text-white text-xs">
-              {Math.round(file.similarity)}% similar
-            </Badge>
+          {/* Actions */}
+          <div className="flex justify-end space-x-3">
+            <Button variant="outline" onClick={onClose} className="border-gray-600">
+              Close
+            </Button>
+            <Button className="bg-replit-orange hover:bg-orange-600">
+              Export Report
+            </Button>
           </div>
-
-          <ScrollArea className="flex-1 bg-editor-dark rounded border border-gray-600">
-            <pre className="p-4 text-xs text-gray-300 font-mono whitespace-pre-wrap">
-              {file.content}
-            </pre>
-          </ScrollArea>
-        </div>
-      ))}
-    </div>
-  );
-
-  return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className={`${isMobile ? 'max-w-[95vw] max-h-[95vh]' : 'max-w-6xl max-h-[90vh]'} bg-navy-dark border-gray-700`}>
-        <DialogHeader className="pb-2">
-          <DialogTitle className="text-white flex flex-col sm:flex-row sm:items-center space-y-1 sm:space-y-0 sm:space-x-2">
-            <span className="text-sm sm:text-base">Code Comparison</span>
-            <Badge variant="secondary" className="bg-gray-700 text-gray-300 w-fit">
-              {duplicate.type}
-            </Badge>
-          </DialogTitle>
-        </DialogHeader>
-
-        {isMobile ? <MobileLayout /> : <DesktopLayout />}
-
-        <div className={`${isMobile ? 'mt-3' : 'mt-4'}`}>
-          <p className="text-xs sm:text-sm text-gray-400 leading-relaxed">{duplicate.description}</p>
         </div>
       </DialogContent>
     </Dialog>
