@@ -1,11 +1,13 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { createServer } from "http";
-import { setupVite, serveStatic, log } from "./vite";
+import { log } from "./vite";
 import { logger, AppError } from "./logger";
 import { securityHeaders, corsHeaders } from "./security";
 import { storage } from "./storage";
 import session from "express-session";
 import MemoryStore from "memorystore";
+import fs from "fs";
+import path from "path";
 
 const app = express();
 
@@ -165,15 +167,54 @@ app.use((err: any, req: Request, res: Response, _next: NextFunction) => {
   });
 });
 
+// Simple static file serving for development
+function setupSimpleStatic(app: express.Express) {
+  const clientPath = path.resolve(import.meta.dirname, "..", "client");
+  
+  // Serve static files from client directory
+  app.use(express.static(clientPath));
+  
+  // Fallback to index.html for SPA routing - using specific patterns to avoid path-to-regexp errors
+  app.get('/', (req, res) => {
+    const indexPath = path.join(clientPath, 'index.html');
+    if (fs.existsSync(indexPath)) {
+      res.sendFile(indexPath);
+    } else {
+      res.status(404).send('Client files not found');
+    }
+  });
+  
+  app.get('/dashboard', (req, res) => {
+    const indexPath = path.join(clientPath, 'index.html');
+    if (fs.existsSync(indexPath)) {
+      res.sendFile(indexPath);
+    } else {
+      res.status(404).send('Client files not found');
+    }
+  });
+}
+
 async function startServer() {
   try {
     const server = createServer(app);
 
-    // Setup Vite AFTER API routes to avoid conflicts
-    if (app.get("env") === "development") {
-      await setupVite(app, server);
+    // Use simple static serving to avoid path-to-regexp issues
+    if (process.env.NODE_ENV === "development") {
+      setupSimpleStatic(app);
     } else {
-      serveStatic(app);
+      // For production, serve from dist directory
+      const distPath = path.resolve(import.meta.dirname, "..", "dist", "public");
+      if (fs.existsSync(distPath)) {
+        app.use(express.static(distPath));
+        app.get('/', (req, res) => {
+          res.sendFile(path.join(distPath, 'index.html'));
+        });
+        app.get('/dashboard', (req, res) => {
+          res.sendFile(path.join(distPath, 'index.html'));
+        });
+      } else {
+        setupSimpleStatic(app);
+      }
     }
 
     const port = 5000;
