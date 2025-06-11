@@ -4,6 +4,7 @@ import session from "express-session";
 import MemoryStore from "memorystore";
 import fs from "fs";
 import path from "path";
+import { createServer as createViteServer } from "vite";
 
 const app = express();
 
@@ -136,35 +137,36 @@ app.use((err: any, req: express.Request, res: express.Response, _next: express.N
   });
 });
 
-// Static file serving
-function setupSimpleStatic(app: express.Express) {
-  const clientPath = path.resolve(import.meta.dirname, "..", "client");
-  
-  app.use(express.static(clientPath));
-  
-  app.get('/', (req, res) => {
-    const indexPath = path.join(clientPath, 'index.html');
-    if (fs.existsSync(indexPath)) {
-      res.sendFile(indexPath);
-    } else {
-      res.status(404).send('Client files not found');
-    }
-  });
-  
-  app.get('/dashboard', (req, res) => {
-    const indexPath = path.join(clientPath, 'index.html');
-    if (fs.existsSync(indexPath)) {
-      res.sendFile(indexPath);
-    } else {
-      res.status(404).send('Client files not found');
-    }
-  });
+// Vite integration for development
+async function setupVite(app: express.Express) {
+  if (process.env.NODE_ENV === 'development') {
+    const viteServer = await createViteServer({
+      server: { middlewareMode: true },
+      appType: 'spa',
+    });
+    
+    app.use(viteServer.ssrFixStacktrace);
+    app.use(viteServer.middlewares);
+  } else {
+    // Production static file serving
+    const distPath = path.resolve(import.meta.dirname, "..", "dist", "public");
+    app.use(express.static(distPath));
+    
+    app.get('*', (req, res) => {
+      const indexPath = path.join(distPath, 'index.html');
+      if (fs.existsSync(indexPath)) {
+        res.sendFile(indexPath);
+      } else {
+        res.status(404).send('Client files not found');
+      }
+    });
+  }
 }
 
 async function startServer() {
   try {
+    await setupVite(app);
     const server = createServer(app);
-    setupSimpleStatic(app);
 
     const port = parseInt(process.env.PORT || '3000', 10);
     server.listen(port, "0.0.0.0", () => {
