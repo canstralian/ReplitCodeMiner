@@ -36,14 +36,7 @@ export async function setupAuth(app: Express) {
     res.redirect("/");
   });
 
-  app.get("/api/logout", (req, res) => {
-    req.session.destroy((err) => {
-      if (err) {
-        console.error('Session destroy error:', err);
-      }
-      res.json({ message: "Logged out successfully" });
-    });
-  });
+  // Logout handled in routes.ts to avoid conflicts
 }
 
 export const isAuthenticated: RequestHandler = (req, res, next) => {

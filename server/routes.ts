@@ -169,9 +169,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const { groupId } = req.params;
-      const groupIdNum = parseInt(groupId);
+      const groupIdNum = parseInt(groupId, 10);
 
-      if (isNaN(groupIdNum)) {
+      if (isNaN(groupIdNum) || groupIdNum <= 0) {
         throw new AppError('Invalid group ID', 400);
       }
 
@@ -192,7 +192,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/search', isAuthenticated, async (req: any, res, next) => {
+  app.post('/api/search', isAuthenticated, validateRequest(searchSchema), async (req: any, res, next) => {
     try {
       const userId = req.user?.claims?.sub;
       if (!userId) {
@@ -200,6 +200,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const { query, language, patternType } = req.body;
+
+      if (!query || typeof query !== 'string') {
+        throw new AppError('Search query is required and must be a string', 400);
+      }
 
       logger.info('Starting code pattern search', { 
         userId, 
@@ -219,7 +223,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         query,
         filters: { language, patternType },
         resultCount: searchResults.length,
-        executionTime: Date.now() - req.startTime
+        executionTime: Date.now() - (req.startTime || Date.now())
       });
 
       logger.info('Code pattern search completed', { 
@@ -493,10 +497,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/ai/test/:provider', async (req: any, res) => {
+  app.post('/api/ai/test/:provider', isAuthenticated, async (req: any, res, next) => {
     try {
       const { aiAnalysisService } = await import('./aiAnalysis');
       const { provider } = req.params;
+      
+      if (!provider || typeof provider !== 'string') {
+        return res.status(400).json({ error: 'Invalid provider name' });
+      }
+      
       const result = await aiAnalysisService.testProvider(provider);
       res.json(result);
     } catch (error) {
