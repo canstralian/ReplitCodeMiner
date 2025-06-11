@@ -48,11 +48,12 @@ const isAuthenticated = (req: any, res: any, next: any) => {
   res.status(401).json({ message: "Authentication required" });
 };
 
-// API Routes (registered BEFORE Vite middleware)
+// Health check endpoint
 app.get('/health', (req, res) => {
   res.json({ status: 'healthy', timestamp: new Date().toISOString() });
 });
 
+// API Routes
 app.get('/api/auth/user', isAuthenticated, async (req: any, res, next) => {
   try {
     const userId = req.user?.claims?.sub;
