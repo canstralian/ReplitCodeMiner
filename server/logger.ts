@@ -5,19 +5,21 @@ const isDevelopment = process.env.NODE_ENV === 'development';
 
 export const logger = createLogger({
   level: isDevelopment ? 'debug' : 'info',
-  format: format.combine(
-    format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
-    format.errors({ stack: true }),
-    format.json(),
-    ...(isDevelopment ? [format.colorize(), format.simple()] : [])
-  ),
+  format: isDevelopment 
+    ? format.combine(
+        format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+        format.errors({ stack: true }),
+        format.colorize(),
+        format.simple()
+      )
+    : format.combine(
+        format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+        format.errors({ stack: true }),
+        format.json()
+      ),
   defaultMeta: { service: 'replit-code-analyzer' },
   transports: [
-    new transports.Console({
-      format: isDevelopment 
-        ? format.combine(format.colorize(), format.simple())
-        : format.json()
-    })
+    new transports.Console()
   ]
 });
 
@@ -34,8 +36,7 @@ export class AppError extends Error {
 }
 
 export const logRequest = (req: any, res: any, responseData?: any) => {
-  const start = Date.now();
-  const duration = Date.now() - (req.startTime || start);
+  const duration = Date.now() - (req.startTime || Date.now());
   
   logger.info('API Request', {
     method: req.method,

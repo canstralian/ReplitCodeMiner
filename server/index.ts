@@ -4,8 +4,20 @@ import session from "express-session";
 import MemoryStore from "memorystore";
 import path from "path";
 import fs from "fs";
+import { securityHeaders, corsHeaders } from "./security";
+import { logger, AppError } from "./logger";
 
 const app = express();
+
+// Security middleware
+app.use(securityHeaders);
+app.use(corsHeaders);
+
+// Request timing middleware
+app.use((req: any, res, next) => {
+  req.startTime = Date.now();
+  next();
+});
 
 // Basic middleware
 app.use(express.json({ limit: '10mb' }));
@@ -130,7 +142,17 @@ app.get('/api/duplicates', isAuthenticated, (req, res) => {
 
 // Error handling middleware
 app.use((err: any, req: express.Request, res: express.Response, _next: express.NextFunction) => {
-  console.error('Error:', err.message);
+  logger.error('Server error', { 
+    error: err.message, 
+    stack: err.stack,
+    path: req.path,
+    method: req.method
+  });
+  
+  if (err instanceof AppError) {
+    return res.status(err.statusCode).json({ message: err.message });
+  }
+  
   res.status(500).json({
     message: process.env.NODE_ENV === 'development' ? err.message : "Internal Server Error"
   });
@@ -158,10 +180,10 @@ app.get('/dashboard', (req, res) => {
 async function startServer() {
   try {
     const server = createServer(app);
-    const port = parseInt(process.env.PORT || '3000', 10);
+    const port = parseInt(process.env.PORT || '5000', 10);
     
     server.listen(port, "0.0.0.0", () => {
-      console.log(`Server running on port ${port}`);
+      logger.info(`Server running on port ${port}`);
     });
   } catch (error) {
     console.error('Failed to start server:', error);
