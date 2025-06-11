@@ -6,6 +6,7 @@ import Header from "@/components/header";
 import Landing from "@/pages/landing";
 import Dashboard from "@/pages/dashboard";
 import NotFound from "@/pages/not-found";
+import ErrorBoundary from "@/components/error-boundary";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -18,20 +19,22 @@ const queryClient = new QueryClient({
 
 export default function App() {
   return (
-    <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
-      <QueryClientProvider client={queryClient}>
-        <div className="min-h-screen bg-background text-foreground">
-          <Header />
-          <main className="container mx-auto px-4 py-8">
-            <Switch>
-              <Route path="/" component={Landing} />
-              <Route path="/dashboard" component={Dashboard} />
-              <Route component={NotFound} />
-            </Switch>
-          </main>
-          <Toaster />
-        </div>
-      </QueryClientProvider>
-    </ThemeProvider>
+    <ErrorBoundary>
+      <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
+        <QueryClientProvider client={queryClient}>
+          <div className="min-h-screen bg-background text-foreground">
+            <Header />
+            <main className="container mx-auto px-4 py-8">
+              <Switch>
+                <Route path="/" component={Landing} />
+                <Route path="/dashboard" component={Dashboard} />
+                <Route component={NotFound} />
+              </Switch>
+            </main>
+            <Toaster />
+          </div>
+        </QueryClientProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
   );
 }

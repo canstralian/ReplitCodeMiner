@@ -13,6 +13,20 @@ interface State {
   error?: Error;
 }
 
+import React, { Component, ErrorInfo, ReactNode } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { AlertTriangle } from 'lucide-react';
+
+interface Props {
+  children: ReactNode;
+}
+
+interface State {
+  hasError: boolean;
+  error?: Error;
+}
+
 class ErrorBoundary extends Component<Props, State> {
   public state: State = {
     hasError: false
@@ -62,5 +76,7 @@ class ErrorBoundary extends Component<Props, State> {
     return this.props.children;
   }
 }
+
+export default ErrorBoundary;
 
 export default ErrorBoundary;
