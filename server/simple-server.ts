@@ -2,7 +2,8 @@ import express from "express";
 import { createServer } from "http";
 import session from "express-session";
 import MemoryStore from "memorystore";
-import { setupVite, serveStatic } from "./vite.js";
+import path from "path";
+import fs from "fs";
 
 const app = express();
 
@@ -127,6 +128,29 @@ app.get('/api/duplicates', isAuthenticated, (req, res) => {
   res.json(mockDuplicates);
 });
 
+// Simple static file serving for development
+const clientPath = path.resolve(import.meta.dirname, "..", "client");
+app.use(express.static(clientPath));
+
+// Serve React app for specific routes to avoid wildcard issues
+app.get('/', (req, res) => {
+  const indexPath = path.join(clientPath, 'index.html');
+  if (fs.existsSync(indexPath)) {
+    res.sendFile(indexPath);
+  } else {
+    res.status(404).send('Client files not found');
+  }
+});
+
+app.get('/dashboard', (req, res) => {
+  const indexPath = path.join(clientPath, 'index.html');
+  if (fs.existsSync(indexPath)) {
+    res.sendFile(indexPath);
+  } else {
+    res.status(404).send('Client files not found');
+  }
+});
+
 // Error handling middleware
 app.use((err: any, req: express.Request, res: express.Response, _next: express.NextFunction) => {
   console.error('Error:', err.message);
@@ -135,26 +159,9 @@ app.use((err: any, req: express.Request, res: express.Response, _next: express.N
   });
 });
 
+const server = createServer(app);
+const port = parseInt(process.env.PORT || '3000', 10);
 
-
-async function startServer() {
-  try {
-    const server = createServer(app);
-    
-    if (process.env.NODE_ENV === 'development') {
-      await setupVite(app, server);
-    } else {
-      serveStatic(app);
-    }
-
-    const port = parseInt(process.env.PORT || '3000', 10);
-    server.listen(port, "0.0.0.0", () => {
-      console.log(`Server running on port ${port}`);
-    });
-  } catch (error) {
-    console.error('Failed to start server:', error);
-    process.exit(1);
-  }
-}
-
-startServer();
+server.listen(port, "0.0.0.0", () => {
+  console.log(`Server running on port ${port}`);
+});
