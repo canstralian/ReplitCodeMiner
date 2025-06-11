@@ -1,28 +1,23 @@
-import express from 'express';
-
+const express = require('express');
 const app = express();
 
-// Test each route pattern one by one to find the malformed one
+console.log('Testing individual route patterns...');
+
 const routes = [
   '/api/auth/user',
   '/api/projects', 
+  '/api/duplicates',
   '/api/duplicates/:groupId',
-  '/api/ai/test/:provider',
-  '/api/login',
-  '/api/callback',
-  '/api/logout'
+  '/api/ai/test/:provider'
 ];
 
-console.log('Testing route patterns...');
-
-routes.forEach((route, i) => {
+routes.forEach((route, index) => {
   try {
-    app.get(route, (req, res) => res.send('ok'));
-    console.log(`✓ Route ${i}: ${route}`);
+    app.get(route, (req, res) => res.json({route}));
+    console.log(`✓ Route ${index + 1}: ${route} - OK`);
   } catch (error) {
-    console.log(`✗ Route ${i}: ${route} - ERROR: ${error.message}`);
-    console.log('Stack:', error.stack);
+    console.log(`✗ Route ${index + 1}: ${route} - ERROR: ${error.message}`);
   }
 });
 
-console.log('Route test complete');
+console.log('Route testing complete');
