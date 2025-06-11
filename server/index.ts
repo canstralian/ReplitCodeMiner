@@ -217,7 +217,7 @@ async function startServer() {
       }
     }
 
-    const port = 5000;
+    const port = parseInt(process.env.PORT || '3000', 10);
     server.listen(port, "0.0.0.0", () => {
       log(`serving on port ${port}`);
       logger.info('Server started successfully', { port, environment: process.env.NODE_ENV });

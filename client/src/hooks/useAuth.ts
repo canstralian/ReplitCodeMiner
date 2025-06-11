@@ -1,25 +1,37 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+
+export interface User {
+  id: string;
+  email: string;
+  name?: string;
+}
 
 export function useAuth() {
   const queryClient = useQueryClient();
-  
-  const { data: user, isLoading } = useQuery({
+
+  // Fetch current user
+  const { data: user, isLoading, error } = useQuery<User>({
     queryKey: ["/api/auth/user"],
     retry: false,
   });
 
+  // Logout mutation
   const logoutMutation = useMutation({
-    mutationFn: () => apiRequest("POST", "/api/auth/logout"),
+    mutationFn: async () => {
+      const response = await fetch("/api/auth/logout", {
+        method: "POST",
+        credentials: "include",
+      });
+      if (!response.ok) {
+        throw new Error("Logout failed");
+      }
+      return response.json();
+    },
     onSuccess: () => {
+      // Clear all queries and redirect to home
       queryClient.clear();
       window.location.href = "/";
     },
-    onError: (error) => {
-      console.error("Logout error:", error);
-      // Force redirect even on error
-      window.location.href = "/";
-    }
   });
 
   const logout = () => {
@@ -29,6 +41,7 @@ export function useAuth() {
   return {
     user,
     isLoading,
+    error,
     isAuthenticated: !!user,
     logout,
     isLoggingOut: logoutMutation.isPending,
