@@ -1,42 +1,19 @@
-import { Link } from "wouter";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Home, ArrowLeft, Search } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { AlertCircle } from "lucide-react";
 
 export default function NotFound() {
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <Card className="w-full max-w-md text-center">
-        <CardHeader>
-          <div className="text-6xl font-bold text-muted-foreground mb-4">404</div>
-          <CardTitle>Page Not Found</CardTitle>
-          <CardDescription>
-            The page you're looking for doesn't exist or has been moved.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex flex-col sm:flex-row gap-2">
-            <Link href="/">
-              <Button className="w-full">
-                <Home className="h-4 w-4 mr-2" />
-                Go Home
-              </Button>
-            </Link>
-            <Button 
-              variant="outline" 
-              onClick={() => window.history.back()}
-              className="w-full"
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Go Back
-            </Button>
+    <div className="min-h-screen w-full flex items-center justify-center bg-gray-50">
+      <Card className="w-full max-w-md mx-4">
+        <CardContent className="pt-6">
+          <div className="flex mb-4 gap-2">
+            <AlertCircle className="h-8 w-8 text-red-500" />
+            <h1 className="text-2xl font-bold text-gray-900">404 Page Not Found</h1>
           </div>
-          <Link href="/dashboard">
-            <Button variant="ghost" className="w-full">
-              <Search className="h-4 w-4 mr-2" />
-              Browse Dashboard
-            </Button>
-          </Link>
+
+          <p className="mt-4 text-sm text-gray-600">
+            Did you forget to add the page to the router?
+          </p>
         </CardContent>
       </Card>
     </div>

@@ -84,37 +84,32 @@ export async function setupAuth(app: Express) {
     verified(null, user);
   };
 
-  const domains = process.env.REPLIT_DOMAINS!.split(",");
-  const primaryDomain = domains[0].trim();
-  
-  // Sanitize domain for callback URL to prevent path-to-regexp errors
-  const sanitizedDomain = primaryDomain.replace(/[^a-zA-Z0-9.-]/g, '');
-  const callbackURL = `https://${sanitizedDomain}/api/callback`;
-
-  // Use a single strategy with a clean name
-  const strategy = new Strategy(
-    {
-      name: "replit-oidc",
-      config,
-      scope: "openid email profile offline_access",
-      callbackURL,
-    },
-    verify,
-  );
-  passport.use(strategy);
+  for (const domain of process.env
+    .REPLIT_DOMAINS!.split(",")) {
+    const strategy = new Strategy(
+      {
+        name: `replitauth:${domain}`,
+        config,
+        scope: "openid email profile offline_access",
+        callbackURL: `https://${domain}/api/callback`,
+      },
+      verify,
+    );
+    passport.use(strategy);
+  }
 
   passport.serializeUser((user: Express.User, cb) => cb(null, user));
   passport.deserializeUser((user: Express.User, cb) => cb(null, user));
 
   app.get("/api/login", (req, res, next) => {
-    passport.authenticate("replit-oidc", {
+    passport.authenticate(`replitauth:${req.hostname}`, {
       prompt: "login consent",
       scope: ["openid", "email", "profile", "offline_access"],
     })(req, res, next);
   });
 
   app.get("/api/callback", (req, res, next) => {
-    passport.authenticate("replit-oidc", {
+    passport.authenticate(`replitauth:${req.hostname}`, {
       successReturnToOrRedirect: "/",
       failureRedirect: "/api/login",
     })(req, res, next);
@@ -132,18 +127,16 @@ export async function setupAuth(app: Express) {
   });
 }
 
-export const isAuthenticated: RequestHandler = (req, res, next) => {
+export const isAuthenticated: RequestHandler = async (req, res, next) => {
   const user = req.user as any;
 
-  if (!req.isAuthenticated() || !user?.expires_at) {
-    res.status(401).json({ message: "Unauthorized" });
-    return;
+  if (!req.isAuthenticated() || !user.expires_at) {
+    return res.status(401).json({ message: "Unauthorized" });
   }
 
   const now = Math.floor(Date.now() / 1000);
   if (now <= user.expires_at) {
-    next();
-    return;
+    return next();
   }
 
   const refreshToken = user.refresh_token;
@@ -152,15 +145,13 @@ export const isAuthenticated: RequestHandler = (req, res, next) => {
     return;
   }
 
-  // Handle token refresh asynchronously
-  (async () => {
-    try {
-      const config = await getOidcConfig();
-      const tokenResponse = await client.refreshTokenGrant(config, refreshToken);
-      updateUserSession(user, tokenResponse);
-      next();
-    } catch (error) {
-      res.status(401).json({ message: "Unauthorized" });
-    }
-  })();
+  try {
+    const config = await getOidcConfig();
+    const tokenResponse = await client.refreshTokenGrant(config, refreshToken);
+    updateUserSession(user, tokenResponse);
+    return next();
+  } catch (error) {
+    res.status(401).json({ message: "Unauthorized" });
+    return;
+  }
 };

@@ -1,5 +1,4 @@
 import crypto from 'crypto';
-import { logger, AppError } from './logger';
 
 export interface ReplitProject {
   id: string;
@@ -62,12 +61,6 @@ export class ReplitApiService {
     `;
 
     try {
-      if (!accessToken) {
-        throw new AppError('Access token is required', 401);
-      }
-
-      logger.debug('Fetching projects from Replit API');
-      
       const response = await fetch(this.GRAPHQL_ENDPOINT, {
         method: 'POST',
         headers: {
@@ -78,49 +71,29 @@ export class ReplitApiService {
       });
 
       if (!response.ok) {
-        if (response.status === 401) {
-          throw new AppError('Unauthorized access to Replit API', 401);
-        }
-        if (response.status === 429) {
-          throw new AppError('Rate limit exceeded', 429);
-        }
-        throw new AppError(`Failed to fetch projects: ${response.statusText}`, response.status);
+        throw new Error(`Failed to fetch projects: ${response.statusText}`);
       }
 
       const data = await response.json();
       
       if (data.errors) {
-        logger.error('GraphQL errors from Replit API', { errors: data.errors });
-        throw new AppError(`GraphQL errors: ${JSON.stringify(data.errors)}`, 400);
+        throw new Error(`GraphQL errors: ${JSON.stringify(data.errors)}`);
       }
 
       const repls = data.data?.currentUser?.repls?.items || [];
       
-      const projects = repls.map((repl: any) => {
-        if (!repl.id || !repl.title) {
-          logger.warn('Invalid repl data received', { repl });
-          return null;
-        }
-        
-        return {
-          id: repl.id,
-          title: repl.title,
-          url: repl.url || '',
-          language: repl.language || 'unknown',
-          description: repl.description || '',
-          fileCount: repl.fileCount || 0,
-          lastUpdated: repl.timeUpdated ? new Date(repl.timeUpdated) : new Date(),
-        };
-      }).filter(Boolean);
-
-      logger.info('Successfully fetched projects from Replit API', { count: projects.length });
-      return projects;
+      return repls.map((repl: any) => ({
+        id: repl.id,
+        title: repl.title,
+        url: repl.url,
+        language: repl.language,
+        description: repl.description,
+        fileCount: repl.fileCount || 0,
+        lastUpdated: repl.timeUpdated ? new Date(repl.timeUpdated) : new Date(),
+      }));
     } catch (error) {
-      logger.error('Error fetching Replit projects', { 
-        error: (error as Error).message,
-        stack: (error as Error).stack 
-      });
-      throw error instanceof AppError ? error : new AppError('Failed to fetch projects from Replit API', 500);
+      console.error('Error fetching Replit projects:', error);
+      throw error;
     }
   }
 
@@ -225,10 +198,10 @@ export class ReplitApiService {
 
   private extractFunctionPatterns(file: CodeFile, lines: string[]): CodePattern[] {
     const patterns: CodePattern[] = [];
-    const functionRegex = /(?:function\s+(\w+)|const\s+(\w+)\s*=|(\w+)\s*:\s*function)/;
+    const functionRegex = /(?:function\s+(\w+)|const\s+(\w+)\s*=|(\w+)\s*:\s*function)/g;
 
     lines.forEach((line, index) => {
-      const match = line.match(functionRegex);
+      const match = functionRegex.exec(line);
       if (match) {
         const functionName = match[1] || match[2] || match[3];
         const snippet = this.extractFunctionBody(lines, index);
@@ -330,34 +303,13 @@ export class ReplitApiService {
   private findSimilarPatterns(patterns: CodePattern[]): DuplicateMatch[] {
     const similar: DuplicateMatch[] = [];
     const threshold = 0.8; // 80% similarity
-    const processed = new Set<string>();
 
-    // Group patterns by type for more efficient comparison
-    const patternsByType = new Map<string, CodePattern[]>();
-    patterns.forEach(pattern => {
-      if (!patternsByType.has(pattern.patternType)) {
-        patternsByType.set(pattern.patternType, []);
-      }
-      patternsByType.get(pattern.patternType)!.push(pattern);
-    });
-
-    // Only compare patterns of the same type
-    patternsByType.forEach(typePatterns => {
-      for (let i = 0; i < typePatterns.length; i++) {
-        for (let j = i + 1; j < typePatterns.length; j++) {
-          const pattern1 = typePatterns[i];
-          const pattern2 = typePatterns[j];
-          
-          const pairKey = `${pattern1.patternHash}-${pattern2.patternHash}`;
-          if (processed.has(pairKey)) continue;
-          processed.add(pairKey);
-          
-          // Skip if patterns are too different in size
-          const sizeDiff = Math.abs(pattern1.codeSnippet.length - pattern2.codeSnippet.length);
-          if (sizeDiff > Math.max(pattern1.codeSnippet.length, pattern2.codeSnippet.length) * 0.5) {
-            continue;
-          }
-          
+    for (let i = 0; i < patterns.length; i++) {
+      for (let j = i + 1; j < patterns.length; j++) {
+        const pattern1 = patterns[i];
+        const pattern2 = patterns[j];
+        
+        if (pattern1.patternType === pattern2.patternType) {
           const similarity = this.calculateSimilarity(pattern1.codeSnippet, pattern2.codeSnippet);
           
           if (similarity >= threshold) {
@@ -370,7 +322,7 @@ export class ReplitApiService {
           }
         }
       }
-    });
+    }
 
     return similar;
   }

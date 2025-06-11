@@ -1,32 +1,41 @@
-import { QueryClientProvider } from "@tanstack/react-query";
 import { Switch, Route } from "wouter";
+import { queryClient } from "./lib/queryClient";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
-import { ThemeProvider } from "next-themes";
-import Header from "@/components/header";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { useAuth } from "@/hooks/useAuth";
+import NotFound from "@/pages/not-found";
 import Landing from "@/pages/landing";
 import Dashboard from "@/pages/dashboard";
-import NotFound from "@/pages/not-found";
-import ErrorBoundary from "@/components/error-boundary";
-import { queryClient } from "@/lib/queryClient";
 
-export default function App() {
+function Router() {
+  const { isAuthenticated, isLoading } = useAuth();
+
   return (
-    <ErrorBoundary>
-      <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
-        <QueryClientProvider client={queryClient}>
-          <div className="min-h-screen bg-background text-foreground">
-            <Header />
-            <main className="container mx-auto px-4 py-8">
-              <Switch>
-                <Route path="/" component={Landing} />
-                <Route path="/dashboard" component={Dashboard} />
-                <Route component={NotFound} />
-              </Switch>
-            </main>
-            <Toaster />
-          </div>
-        </QueryClientProvider>
-      </ThemeProvider>
-    </ErrorBoundary>
+    <Switch>
+      {isLoading || !isAuthenticated ? (
+        <Route path="/" component={Landing} />
+      ) : (
+        <>
+          <Route path="/" component={Dashboard} />
+        </>
+      )}
+      <Route component={NotFound} />
+    </Switch>
   );
 }
+
+function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <div className="dark min-h-screen bg-editor-dark text-white">
+          <Toaster />
+          <Router />
+        </div>
+      </TooltipProvider>
+    </QueryClientProvider>
+  );
+}
+
+export default App;
