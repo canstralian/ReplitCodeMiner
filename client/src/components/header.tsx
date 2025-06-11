@@ -1,83 +1,80 @@
-import { useAuth } from "@/hooks/useAuth";
+import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Menu, X } from "lucide-react";
-import { useState } from "react";
+import { Badge } from "@/components/ui/badge";
+import { useTheme } from "next-themes";
+import { Moon, Sun, Code2, User, LogOut } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function Header() {
+  const [location] = useLocation();
+  const { theme, setTheme } = useTheme();
   const { user, logout } = useAuth();
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   return (
-    <header className="bg-navy-dark border-b border-gray-700 sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-14 sm:h-16">
-          <div className="flex items-center">
-            <h1 className="text-lg sm:text-xl font-bold text-replit-orange truncate">
-              Code Analyzer
-            </h1>
-          </div>
-
-          {user && (
-            <>
-              {/* Desktop Navigation */}
-              <div className="hidden sm:flex items-center space-x-3 lg:space-x-4">
-                <Avatar className="w-8 h-8 sm:w-9 sm:h-9">
-                  <AvatarFallback className="bg-replit-orange text-white text-sm">
-                    {user.email?.[0]?.toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <Button
-                  variant="outline"
-                  onClick={logout}
-                  size="sm"
-                  className="text-white border-gray-600 hover:bg-gray-700"
-                >
-                  Logout
-                </Button>
-              </div>
-
-              {/* Mobile Navigation */}
-              <div className="sm:hidden">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                  className="text-white p-2"
-                >
-                  {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
-                </Button>
-              </div>
-            </>
-          )}
+    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="container flex h-14 items-center">
+        {/* Logo */}
+        <div className="mr-4">
+          <Link href="/">
+            <Button variant="ghost" className="p-0 text-lg font-bold">
+              <Code2 className="h-5 w-5 mr-2" />
+              RepliAnalyzer
+            </Button>
+          </Link>
         </div>
 
-        {/* Mobile Menu */}
-        {user && isMobileMenuOpen && (
-          <div className="sm:hidden border-t border-gray-700 bg-navy-dark">
-            <div className="px-2 pt-2 pb-3 space-y-3">
-              <div className="flex items-center space-x-3 px-3 py-2">
-                <Avatar className="w-8 h-8">
-                  <AvatarFallback className="bg-replit-orange text-white text-sm">
-                    {user.email?.[0]?.toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <span className="text-white text-sm truncate">{user.email}</span>
-              </div>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  logout();
-                  setIsMobileMenuOpen(false);
-                }}
-                className="w-full text-white border-gray-600 hover:bg-gray-700"
+        {/* Navigation */}
+        <nav className="flex items-center space-x-6 text-sm font-medium flex-1">
+          <Link href="/">
+            <Button 
+              variant={location === "/" ? "default" : "ghost"} 
+              size="sm"
+            >
+              Home
+            </Button>
+          </Link>
+          {user && (
+            <Link href="/dashboard">
+              <Button 
+                variant={location === "/dashboard" ? "default" : "ghost"} 
                 size="sm"
               >
-                Logout
+                Dashboard
+              </Button>
+            </Link>
+          )}
+        </nav>
+
+        {/* Right side */}
+        <div className="flex items-center space-x-2">
+          {/* Theme Toggle */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+          >
+            <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+            <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+            <span className="sr-only">Toggle theme</span>
+          </Button>
+
+          {/* User Section */}
+          {user ? (
+            <div className="flex items-center space-x-2">
+              <Badge variant="secondary" className="flex items-center space-x-1">
+                <User className="h-3 w-3" />
+                <span>{user.firstName || user.email}</span>
+              </Badge>
+              <Button variant="ghost" size="sm" onClick={logout}>
+                <LogOut className="h-4 w-4" />
               </Button>
             </div>
-          </div>
-        )}
+          ) : (
+            <Button size="sm">
+              Sign In
+            </Button>
+          )}
+        </div>
       </div>
     </header>
   );

@@ -1,7 +1,7 @@
 import { QueryClient } from "@tanstack/react-query";
 
 // API base URL for development
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
 
 // Default fetcher function for all queries
 const defaultQueryFn = async ({ queryKey }: { queryKey: readonly unknown[] }) => {
