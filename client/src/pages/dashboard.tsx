@@ -56,7 +56,7 @@ export default function Dashboard() {
     }
   };
 
-  const filteredProjects = projects.filter((project: any) => {
+  const filteredProjects = (projects as any[] || []).filter((project: any) => {
     const matchesSearch = !searchQuery || 
       project.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       project.description?.toLowerCase().includes(searchQuery.toLowerCase());
@@ -73,8 +73,8 @@ export default function Dashboard() {
 
       <div className="flex h-screen pt-16">
         <Sidebar 
-          stats={stats}
-          duplicates={duplicates}
+          stats={stats as any}
+          duplicates={duplicates as any[]}
           onRefresh={handleRefreshProjects}
         />
 

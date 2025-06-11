@@ -35,7 +35,7 @@ const isAuthenticated = (req: any, res: any, next: any) => {
   res.status(401).json({ message: "Authentication required" });
 };
 
-// API Routes (registered BEFORE Vite middleware)
+// API Routes
 app.get('/health', (req, res) => {
   res.json({ status: 'healthy', timestamp: new Date().toISOString() });
 });
@@ -59,6 +59,7 @@ app.post('/api/auth/logout', (req, res) => {
 });
 
 app.get('/api/projects', isAuthenticated, (req, res) => {
+  // Mock data for development
   const mockProjects = [
     {
       id: 1,
@@ -79,12 +80,38 @@ app.get('/api/projects', isAuthenticated, (req, res) => {
       fileCount: 23,
       lastUpdated: new Date().toISOString(),
       duplicatesFound: 5
+    },
+    {
+      id: 3,
+      title: "Blog Platform",
+      description: "Content management system for blogging",
+      language: "python",
+      url: "https://replit.com/@user/blog-platform",
+      fileCount: 67,
+      lastUpdated: new Date().toISOString(),
+      duplicatesFound: 8
     }
   ];
   res.json(mockProjects);
 });
 
+app.get('/api/projects/stats', isAuthenticated, (req, res) => {
+  // Mock stats data
+  const mockStats = {
+    totalProjects: 3,
+    duplicatesFound: 25,
+    similarPatterns: 18,
+    languages: {
+      javascript: 1,
+      typescript: 1,
+      python: 1
+    }
+  };
+  res.json(mockStats);
+});
+
 app.get('/api/duplicates', isAuthenticated, (req, res) => {
+  // Mock duplicates data
   const mockDuplicates = [
     {
       id: 1,
@@ -92,22 +119,16 @@ app.get('/api/duplicates', isAuthenticated, (req, res) => {
       description: "Similar calculateTotal functions",
       patterns: ["calculateTotal", "computeTotal"],
       similarityScore: 95
+    },
+    {
+      id: 2,
+      patternType: "component",
+      description: "Similar UserCard components",
+      patterns: ["UserCard", "ProfileCard"],
+      similarityScore: 87
     }
   ];
   res.json(mockDuplicates);
-});
-
-app.get('/api/projects/stats', isAuthenticated, (req, res) => {
-  const mockStats = {
-    totalProjects: 2,
-    duplicatesFound: 17,
-    similarPatterns: 12,
-    languages: {
-      javascript: 1,
-      typescript: 1
-    }
-  };
-  res.json(mockStats);
 });
 
 // Error handling middleware
@@ -118,14 +139,12 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
   });
 });
 
-// Simple static file serving for development
+// Static file serving
 function setupSimpleStatic(app: express.Express) {
   const clientPath = path.resolve(import.meta.dirname, "..", "client");
   
-  // Serve static files from client directory
   app.use(express.static(clientPath));
   
-  // Fallback to index.html for SPA routing - using specific patterns to avoid path-to-regexp errors
   app.get('/', (req, res) => {
     const indexPath = path.join(clientPath, 'index.html');
     if (fs.existsSync(indexPath)) {
@@ -148,25 +167,7 @@ function setupSimpleStatic(app: express.Express) {
 async function startServer() {
   try {
     const server = createServer(app);
-
-    // Use simple static serving to avoid path-to-regexp issues
-    if (process.env.NODE_ENV === "development") {
-      setupSimpleStatic(app);
-    } else {
-      // For production, serve from dist directory
-      const distPath = path.resolve(import.meta.dirname, "..", "dist", "public");
-      if (fs.existsSync(distPath)) {
-        app.use(express.static(distPath));
-        app.get('/', (req, res) => {
-          res.sendFile(path.join(distPath, 'index.html'));
-        });
-        app.get('/dashboard', (req, res) => {
-          res.sendFile(path.join(distPath, 'index.html'));
-        });
-      } else {
-        setupSimpleStatic(app);
-      }
-    }
+    setupSimpleStatic(app);
 
     const port = parseInt(process.env.PORT || '3000', 10);
     server.listen(port, "0.0.0.0", () => {

@@ -467,7 +467,7 @@ Please provide specific refactoring suggestions in JSON format:
     
     // Basic performance pattern detection
     if (code.includes('for') && code.includes('for')) {
-      const nestedLoops = (code.match(/for.*for/gs) || []).length;
+      const nestedLoops = (code.match(/for.*for/g) || []).length;
       if (nestedLoops > 0) {
         issues.push({
           type: 'nested_loops',
