@@ -1,8 +1,9 @@
 import { Switch, Route } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
-import NotFound from "@/pages/not-found";
 import Landing from "@/pages/landing";
 import Dashboard from "@/pages/dashboard";
+import Signup from "@/pages/signup";
+import NotFound from "@/pages/not-found";
 
 export default function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -10,13 +11,14 @@ export default function Router() {
   return (
     <Switch>
       {isLoading || !isAuthenticated ? (
-        <Route path="/" component={Landing} />
+        <Route path="/" element={<Landing />} />
+        <Route path="/signup" element={<Signup />} />
       ) : (
         <>
-          <Route path="/" component={Dashboard} />
+          <Route path="/" element={<Dashboard />} />
         </>
       )}
-      <Route component={NotFound} />
+      <Route path="*" element={<NotFound />} />
     </Switch>
   );
 }

@@ -17,9 +17,18 @@ export default function Landing() {
               <Code2 className="text-replit-orange text-2xl" />
               <h1 className="text-xl font-semibold text-white">Replit Project Analyzer</h1>
             </div>
-            <Button onClick={handleLogin} className="bg-replit-orange hover:bg-orange-600">
-              Connect to Replit
-            </Button>
+            <div className="flex space-x-3">
+              <Button 
+                onClick={() => window.location.href = "/signup"}
+                variant="outline" 
+                className="border-gray-600 text-white hover:bg-gray-700"
+              >
+                Start Free Trial
+              </Button>
+              <Button onClick={handleLogin} className="bg-replit-orange hover:bg-orange-600">
+                Sign In
+              </Button>
+            </div>
           </div>
         </div>
       </header>
@@ -35,13 +44,23 @@ export default function Landing() {
             Connect your Replit account to automatically scan all your projects, identify duplicate code patterns, 
             and discover opportunities to optimize your codebase.
           </p>
-          <Button 
-            onClick={handleLogin}
-            size="lg"
-            className="bg-replit-orange hover:bg-orange-600 text-white px-8 py-4 text-lg"
-          >
-            Get Started Free
-          </Button>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Button 
+              onClick={() => window.location.href = "/signup"}
+              size="lg"
+              className="bg-replit-orange hover:bg-orange-600 text-white px-8 py-4 text-lg"
+            >
+              Start Free Trial
+            </Button>
+            <Button 
+              onClick={handleLogin}
+              size="lg"
+              variant="outline"
+              className="border-gray-600 text-white hover:bg-gray-700 px-8 py-4 text-lg"
+            >
+              Sign In with Replit
+            </Button>
+          </div>
         </div>
 
         {/* Features Grid */}
@@ -121,13 +140,23 @@ export default function Landing() {
           <p className="text-gray-300 mb-8 text-lg">
             Connect your Replit account and start discovering duplicate patterns in minutes.
           </p>
-          <Button 
-            onClick={handleLogin}
-            size="lg"
-            className="bg-replit-orange hover:bg-orange-600 text-white px-8 py-4 text-lg"
-          >
-            Connect to Replit Now
-          </Button>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Button 
+              onClick={() => window.location.href = "/signup"}
+              size="lg"
+              className="bg-replit-orange hover:bg-orange-600 text-white px-8 py-4 text-lg"
+            >
+              Start Free Trial
+            </Button>
+            <Button 
+              onClick={handleLogin}
+              size="lg"
+              variant="outline"
+              className="border-gray-600 text-white hover:bg-gray-700 px-8 py-4 text-lg"
+            >
+              Sign In
+            </Button>
+          </div>
         </div>
       </div>
     </div>
