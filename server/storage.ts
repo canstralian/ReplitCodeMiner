@@ -12,6 +12,8 @@ interface IStorage {
   getUserProjectStats(userId: string): Promise<any>;
   storeAnalysisResults(userId: string, results: AnalysisResult[]): Promise<void>;
   getUserDuplicates(userId: string): Promise<any[]>;
+  getDuplicateGroup(userId: string, groupId: number): Promise<any>;
+  searchCodePatterns(userId: string, options: any): Promise<any[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -105,6 +107,16 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUserDuplicates(userId: string): Promise<any[]> {
+    // Stub implementation for now
+    return [];
+  }
+
+  async getDuplicateGroup(userId: string, groupId: number): Promise<any> {
+    // Stub implementation for now
+    return null;
+  }
+
+  async searchCodePatterns(userId: string, options: any): Promise<any[]> {
     // Stub implementation for now
     return [];
   }
