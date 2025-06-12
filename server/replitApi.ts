@@ -38,7 +38,92 @@ export interface DuplicateMatch {
   description: string;
 }
 
+interface CodeFile {
+  path: string;
+  content: string;
+  language: string;
+}
+
+interface CodePattern {
+  filePath: string;
+  patternHash: string;
+  codeSnippet: string;
+  patternType: 'function' | 'import' | 'component';
+  lineStart: number;
+  lineEnd: number;
+}
+
+interface DuplicateMatch {
+  patterns: CodePattern[];
+  similarityScore: number;
+  patternType: string;
+  description: string;
+}
+
+interface AnalysisResult {
+  projectId: string;
+  patterns: CodePattern[];
+  duplicates: DuplicateMatch[];
+}
+
+interface ReplitProject {
+  id: string;
+  title: string;
+  slug: string;
+  language: string;
+  url: string;
+  isPrivate: boolean;
+  timeCreated: string;
+  timeUpdated: string;
+}
+
 export class ReplitApiService {
+  async fetchUserProjects(accessToken: string): Promise<ReplitProject[]> {
+    try {
+      const response = await fetch('https://replit.com/graphql', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          query: `
+            query GetUserRepls {
+              currentUser {
+                repls(first: 100) {
+                  items {
+                    id
+                    title
+                    slug
+                    language
+                    url
+                    isPrivate
+                    timeCreated
+                    timeUpdated
+                  }
+                }
+              }
+            }
+          `
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch user projects: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      
+      if (data.errors) {
+        throw new Error(`GraphQL errors: ${JSON.stringify(data.errors)}`);
+      }
+
+      return data.data?.currentUser?.repls?.items || [];
+    } catch (error) {
+      console.error('Error fetching user projects:', { error: error instanceof Error ? error.message : String(error) });
+      throw error;
+    }
+  }
   private readonly GRAPHQL_ENDPOINT = 'https://replit.com/graphql';
   
   async fetchUserProjects(accessToken: string): Promise<ReplitProject[]> {
@@ -165,7 +250,7 @@ export class ReplitApiService {
           duplicates,
         });
       } catch (error) {
-        console.error(`Error analyzing project ${projectId}:`, error);
+        console.error('Error analyzing project:', { projectId, error: error instanceof Error ? error.message : String(error) });
       }
     }
 
@@ -335,6 +420,86 @@ export class ReplitApiService {
     
     const distance = this.levenshteinDistance(longer, shorter);
     return (longer.length - distance) / longer.length;
+  }
+
+  private levenshteinDistance(str1: string, str2: string): number {
+    const matrix = Array(str2.length + 1).fill(null).map(() => Array(str1.length + 1).fill(null));
+
+    for (let i = 0; i <= str1.length; i++) matrix[0][i] = i;
+    for (let j = 0; j <= str2.length; j++) matrix[j][0] = j;
+
+    for (let j = 1; j <= str2.length; j++) {
+      for (let i = 1; i <= str1.length; i++) {
+        const substitutionCost = str1[i - 1] === str2[j - 1] ? 0 : 1;
+        matrix[j][i] = Math.min(
+          matrix[j][i - 1] + 1,
+          matrix[j - 1][i] + 1,
+          matrix[j - 1][i - 1] + substitutionCost
+        );
+      }
+    }
+
+    return matrix[str2.length][str1.length];
+  }
+
+  private hashCode(str: string): string {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      const char = str.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash;
+    }
+    return hash.toString(36);
+  }
+
+  private extractFunctionBody(lines: string[], startIndex: number): string {
+    let braceCount = 0;
+    let endIndex = startIndex;
+    
+    for (let i = startIndex; i < lines.length; i++) {
+      const line = lines[i];
+      braceCount += (line.match(/{/g) || []).length;
+      braceCount -= (line.match(/}/g) || []).length;
+      
+      if (braceCount === 0 && i > startIndex) {
+        endIndex = i;
+        break;
+      }
+    }
+    
+    return lines.slice(startIndex, endIndex + 1).join('\n');
+  }
+
+  private extractComponentBody(lines: string[], startIndex: number): string {
+    return this.extractFunctionBody(lines, startIndex);
+  }
+
+  private looksLikeReactComponent(line: string): boolean {
+    return line.includes('return') || line.includes('jsx') || line.includes('React');
+  }
+
+  private isCodeFile(path: string): boolean {
+    const codeExtensions = ['.js', '.ts', '.jsx', '.tsx', '.py', '.java', '.cpp', '.c', '.cs', '.php', '.rb', '.go'];
+    return codeExtensions.some(ext => path.endsWith(ext));
+  }
+
+  private getLanguageFromPath(path: string): string {
+    const ext = path.split('.').pop()?.toLowerCase();
+    const languageMap: Record<string, string> = {
+      'js': 'javascript',
+      'jsx': 'javascript',
+      'ts': 'typescript',
+      'tsx': 'typescript',
+      'py': 'python',
+      'java': 'java',
+      'cpp': 'cpp',
+      'c': 'c',
+      'cs': 'csharp',
+      'php': 'php',
+      'rb': 'ruby',
+      'go': 'go'
+    };
+    return languageMap[ext || ''] || 'unknown';
   }
 
   private levenshteinDistance(str1: string, str2: string): number {
