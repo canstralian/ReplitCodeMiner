@@ -1,7 +1,7 @@
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "./ui/card";
+import { Button } from "./ui/button";
+import { Checkbox } from "./ui/checkbox";
+import { Badge } from "./ui/badge";
 import { ExternalLink, Copy, CheckCircle, AlertTriangle, Clock } from "lucide-react";
 
 interface Project {

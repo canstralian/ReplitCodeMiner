@@ -1,5 +1,5 @@
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from "./ui/button";
+import { Checkbox } from "./ui/checkbox";
 import { RefreshCw, Code, Copy, Search, CheckCircle } from "lucide-react";
 
 interface SidebarProps {
