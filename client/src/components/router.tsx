@@ -1,9 +1,9 @@
 import { Switch, Route } from "wouter";
-import { useAuth } from "@/hooks/useAuth";
-import Landing from "@/pages/landing";
-import Dashboard from "@/pages/dashboard";
-import Signup from "@/pages/signup";
-import NotFound from "@/pages/not-found";
+import { useAuth } from "../hooks/useAuth";
+import Landing from "../pages/landing";
+import Dashboard from "../pages/dashboard";
+import Signup from "../pages/signup";
+import NotFound from "../pages/not-found";
 
 export default function Router() {
   const { isAuthenticated, isLoading } = useAuth();
