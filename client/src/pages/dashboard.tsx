@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import Header from "@/components/header";
-import Sidebar from "@/components/sidebar";
-import ProjectCard from "@/components/project-card";
-import ComparisonModal from "@/components/comparison-modal";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import Header from "../components/header";
+import Sidebar from "../components/sidebar";
+import ProjectCard from "../components/project-card";
+import ComparisonModal from "../components/comparison-modal";
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import { Search, SlidersHorizontal, Grid3X3, List } from "lucide-react";
 
 export default function Dashboard() {
