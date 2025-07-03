@@ -1,112 +1,75 @@
-import {
-  pgTable,
-  text,
-  varchar,
-  timestamp,
-  jsonb,
-  index,
-  serial,
-  integer,
-  boolean
-} from "drizzle-orm/pg-core";
-import { createInsertSchema } from "drizzle-zod";
+import { pgTable, text, integer, timestamp, varchar, boolean, decimal } from "drizzle-orm/pg-core";
+import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
 
-// Session storage table.
-// (IMPORTANT) This table is mandatory for Replit Auth, don't drop it.
-export const sessions = pgTable(
-  "sessions",
-  {
-    sid: varchar("sid").primaryKey(),
-    sess: jsonb("sess").notNull(),
-    expire: timestamp("expire").notNull(),
-  },
-  (table) => [index("IDX_session_expire").on(table.expire)],
-);
-
-// User storage table.
-// (IMPORTANT) This table is mandatory for Replit Auth, don't drop it.
 export const users = pgTable("users", {
-  id: varchar("id").primaryKey().notNull(),
-  email: varchar("email").unique(),
-  firstName: varchar("first_name"),
-  lastName: varchar("last_name"),
-  profileImageUrl: varchar("profile_image_url"),
+  id: text("id").primaryKey(),
+  email: text("email").notNull().unique(),
+  firstName: text("first_name"),
+  lastName: text("last_name"),
+  profileImageUrl: text("profile_image_url"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-// Projects table to cache Replit project data
 export const projects = pgTable("projects", {
-  id: serial("id").primaryKey(),
-  userId: varchar("user_id").notNull().references(() => users.id),
-  replitId: varchar("replit_id").notNull(),
-  title: varchar("title").notNull(),
-  url: varchar("url").notNull(),
-  language: varchar("language"),
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => users.id),
+  title: text("title").notNull(),
   description: text("description"),
+  language: text("language").notNull(),
+  url: text("url").notNull(),
   fileCount: integer("file_count").default(0),
-  lastUpdated: timestamp("last_updated"),
+  lastUpdated: timestamp("last_updated").defaultNow(),
   createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-// Code patterns and duplicates detection results
 export const codePatterns = pgTable("code_patterns", {
-  id: serial("id").primaryKey(),
-  userId: varchar("user_id").notNull().references(() => users.id),
-  projectId: integer("project_id").notNull().references(() => projects.id),
-  filePath: varchar("file_path").notNull(),
-  patternHash: varchar("pattern_hash").notNull(),
-  codeSnippet: text("code_snippet"),
-  patternType: varchar("pattern_type"), // 'function', 'component', 'style', etc.
-  lineStart: integer("line_start"),
-  lineEnd: integer("line_end"),
+  id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
+  userId: text("user_id").notNull().references(() => users.id),
+  projectId: text("project_id").notNull().references(() => projects.id),
+  filePath: text("file_path").notNull(),
+  patternHash: text("pattern_hash").notNull(),
+  codeSnippet: text("code_snippet").notNull(),
+  patternType: text("pattern_type").notNull(),
+  lineStart: integer("line_start").notNull(),
+  lineEnd: integer("line_end").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-// Duplicate groups for similar code patterns
 export const duplicateGroups = pgTable("duplicate_groups", {
-  id: serial("id").primaryKey(),
-  userId: varchar("user_id").notNull().references(() => users.id),
-  groupHash: varchar("group_hash").notNull(),
-  similarityScore: integer("similarity_score"), // 0-100
-  patternType: varchar("pattern_type"),
-  description: text("description"),
+  id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
+  userId: text("user_id").notNull().references(() => users.id),
+  patternHash: text("pattern_hash").notNull(),
+  similarityScore: decimal("similarity_score", { precision: 5, scale: 4 }),
+  patternType: text("pattern_type").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-// Link patterns to duplicate groups
 export const patternGroups = pgTable("pattern_groups", {
-  id: serial("id").primaryKey(),
-  groupId: integer("group_id").notNull().references(() => duplicateGroups.id),
-  patternId: integer("pattern_id").notNull().references(() => codePatterns.id),
+  id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
+  duplicateGroupId: integer("duplicate_group_id").notNull().references(() => duplicateGroups.id),
+  codePatternId: integer("code_pattern_id").notNull().references(() => codePatterns.id),
 });
 
-export type UpsertUser = typeof users.$inferInsert;
+// Sessions table for express-session
+export const sessions = pgTable("sessions", {
+  sid: varchar("sid").primaryKey(),
+  sess: text("sess").notNull(),
+  expire: timestamp("expire").notNull(),
+});
+
+// Zod schemas
+export const insertUserSchema = createInsertSchema(users);
+export const selectUserSchema = createSelectSchema(users);
+export const insertProjectSchema = createInsertSchema(projects);
+export const selectProjectSchema = createSelectSchema(projects);
+
 export type User = typeof users.$inferSelect;
-
-export type InsertProject = typeof projects.$inferInsert;
+export type UpsertUser = typeof users.$inferInsert;
 export type Project = typeof projects.$inferSelect;
-
-export type InsertCodePattern = typeof codePatterns.$inferInsert;
+export type InsertProject = typeof projects.$inferInsert;
 export type CodePattern = typeof codePatterns.$inferSelect;
-
-export type InsertDuplicateGroup = typeof duplicateGroups.$inferInsert;
+export type InsertCodePattern = typeof codePatterns.$inferInsert;
 export type DuplicateGroup = typeof duplicateGroups.$inferSelect;
-
-export const insertProjectSchema = createInsertSchema(projects).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-export const insertCodePatternSchema = createInsertSchema(codePatterns).omit({
-  id: true,
-  createdAt: true,
-});
-
-export const insertDuplicateGroupSchema = createInsertSchema(duplicateGroups).omit({
-  id: true,
-  createdAt: true,
-});
+export type InsertDuplicateGroup = typeof duplicateGroups.$inferInsert;
