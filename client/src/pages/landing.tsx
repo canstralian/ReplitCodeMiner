@@ -1,8 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Button } from "../components/ui/button";
-import { Code2, Search, GitBranch, Zap } from "lucide-react";
-import { Link } from "next/link";
-import { Play } from "lucide-react";
+import { Code2, Search, GitBranch, Zap, Play } from "lucide-react";
+import { Link } from "wouter";
 
 export default function Landing() {
   const handleLogin = () => {
@@ -35,8 +34,11 @@ export default function Landing() {
         </div>
       </header>
 
-      {/* Hero Section */}
-      <div className="text-center max-w-4xl mx-auto px-4">
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        {/* Hero Section */}
+        <div className="py-20 text-center max-w-4xl mx-auto px-4">
           <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4 md:mb-6">
             Find Duplicate Code
             <span className="text-replit-orange"> Instantly</span>
