@@ -9,7 +9,15 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import { Card, CardContent } from "../components/ui/card";
-import { Search, SlidersHorizontal, Grid3X3, List, Crown, Clock } from "lucide-react";
+import { Search, SlidersHorizontal, Grid3X3, List, Crown, Clock, Menu } from "lucide-react";
+import { useIsMobile } from "../hooks/use-mobile";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+} from "../components/ui/drawer";
 
 
 
@@ -17,12 +25,14 @@ export default function Dashboard() {
   const [location] = useLocation();
   const searchParams = new URLSearchParams(location.split('?')[1] || '');
   const filterParam = searchParams.get('filter');
-  
+
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedLanguage, setSelectedLanguage] = useState("all");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [selectedProjects, setSelectedProjects] = useState<string[]>([]);
   const [showComparison, setShowComparison] = useState(false);
+  const isMobile = useIsMobile();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   // Fetch projects
   const { data: projects = [], isLoading: projectsLoading, refetch: refetchProjects } = useQuery({
@@ -61,28 +71,59 @@ export default function Dashboard() {
     const matchesSearch = !searchQuery || 
       project.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       project.description?.toLowerCase().includes(searchQuery.toLowerCase());
-    
+
     const matchesLanguage = selectedLanguage === "all" || 
       project.language?.toLowerCase() === selectedLanguage.toLowerCase();
-    
+
     const matchesFilter = filterParam !== "duplicates" || 
       (project.duplicateStatus && project.duplicateStatus !== "none");
-    
+
     return matchesSearch && matchesLanguage && matchesFilter;
   });
 
   return (
     <div className="min-h-screen bg-editor-dark">
       <Header />
-      
+
       <div className="flex h-screen pt-16">
-        <Sidebar 
-          stats={stats as any}
-          duplicates={duplicates as any}
-          onRefresh={handleRefreshProjects}
-        />
-        
+        {!isMobile && (
+          <Sidebar 
+            stats={stats as any}
+            duplicates={duplicates as any}
+            onRefresh={handleRefreshProjects}
+          />
+        )}
+
         <main className="flex-1 overflow-hidden">
+          {/* Mobile Sidebar Drawer */}
+          {isMobile && (
+            <div className="mb-4">
+              <Drawer open={isSidebarOpen} onOpenChange={setIsSidebarOpen}>
+                <DrawerTrigger asChild>
+                  <Button variant="outline" size="sm" className="border-gray-600 text-gray-300 hover:bg-editor-dark">
+                    <Menu className="h-4 w-4 mr-2" />
+                    Menu
+                  </Button>
+                </DrawerTrigger>
+                <DrawerContent className="bg-navy-dark border-gray-700 max-h-[80vh]">
+                  <DrawerHeader>
+                    <DrawerTitle className="text-white">Project Overview</DrawerTitle>
+                  </DrawerHeader>
+                  <div className="px-4 pb-6 overflow-y-auto">
+                    <Sidebar 
+                      stats={stats as any}
+                      duplicates={duplicates as any}
+                      onRefresh={() => {
+                        handleRefreshProjects();
+                        setIsSidebarOpen(false);
+                      }}
+                    />
+                  </div>
+                </DrawerContent>
+              </Drawer>
+            </div>
+          )}
+
           {/* Search Header */}
           <div className="bg-navy-dark border-b border-gray-700 p-4">
             <div className="flex flex-col sm:flex-row gap-4">

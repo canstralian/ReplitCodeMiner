@@ -1,7 +1,8 @@
 import { useAuth } from "../hooks/useAuth";
+import { useIsMobile } from "../hooks/use-mobile";
 import { Button } from "./ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
-import { Settings, LogOut, Code2 } from "lucide-react";
+import { Settings, LogOut, Code2, Menu } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -9,23 +10,85 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+} from "./ui/drawer";
 import { Link, useLocation } from "wouter";
+import { useState } from "react";
 
 export default function Header() {
   const { user } = useAuth();
+  const isMobile = useIsMobile();
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   const handleLogout = () => {
     window.location.href = "/api/logout";
   };
 
+  const MobileNavigation = () => (
+    <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
+      <DrawerTrigger asChild>
+        <Button variant="ghost" size="sm" className="md:hidden text-gray-300 hover:text-white">
+          <Menu className="h-5 w-5" />
+        </Button>
+      </DrawerTrigger>
+      <DrawerContent className="bg-navy-dark border-gray-700">
+        <DrawerHeader className="text-left">
+          <DrawerTitle className="text-white flex items-center">
+            <Avatar className="h-8 w-8 mr-3">
+              <AvatarImage src={user?.profileImageUrl} alt={`${user?.firstName} ${user?.lastName}`} />
+              <AvatarFallback className="bg-replit-orange text-white">
+                {user?.firstName?.[0]}{user?.lastName?.[0]}
+              </AvatarFallback>
+            </Avatar>
+            {user?.firstName} {user?.lastName}
+          </DrawerTitle>
+        </DrawerHeader>
+        <div className="px-4 pb-6 space-y-4">
+          <div className="flex items-center space-x-2 bg-editor-dark rounded-lg px-3 py-2">
+            <div className="w-2 h-2 bg-success-green rounded-full"></div>
+            <span className="text-sm text-gray-300">Connected to Replit</span>
+          </div>
+          <Link href="/settings">
+            <Button 
+              variant="ghost" 
+              className="w-full justify-start text-gray-300 hover:bg-editor-dark"
+              onClick={() => setIsDrawerOpen(false)}
+            >
+              <Settings className="h-4 w-4 mr-3" />
+              Settings
+            </Button>
+          </Link>
+          <Button 
+            variant="ghost" 
+            className="w-full justify-start text-gray-300 hover:bg-editor-dark"
+            onClick={() => {
+              handleLogout();
+              setIsDrawerOpen(false);
+            }}
+          >
+            <LogOut className="h-4 w-4 mr-3" />
+            Logout
+          </Button>
+        </div>
+      </DrawerContent>
+    </Drawer>
+  );
+
   return (
     <header className="bg-navy-dark border-b border-gray-700 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2 md:space-x-4">
             <div className="flex items-center space-x-2">
-              <Code2 className="text-replit-orange text-2xl" />
-              <h1 className="text-xl font-semibold text-white">Project Analyzer</h1>
+              <Code2 className="text-replit-orange text-xl md:text-2xl" />
+              <h1 className="text-lg md:text-xl font-semibold text-white">
+                {isMobile ? "Analyzer" : "Project Analyzer"}
+              </h1>
             </div>
             <div className="hidden md:flex items-center space-x-1 bg-editor-dark rounded-lg px-3 py-1">
               <div className="w-2 h-2 bg-success-green rounded-full"></div>
@@ -33,44 +96,50 @@ export default function Header() {
             </div>
           </div>
           
-          <div className="flex items-center space-x-4">
-            <Link href="/settings">
-              <Button variant="ghost" size="sm" className="text-gray-300 hover:text-white">
-                <Settings className="h-4 w-4" />
-              </Button>
-            </Link>
-            
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="flex items-center space-x-2 hover:bg-editor-dark">
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage src={user?.profileImageUrl} alt={`${user?.firstName} ${user?.lastName}`} />
-                    <AvatarFallback className="bg-replit-orange text-white">
-                      {user?.firstName?.[0]}{user?.lastName?.[0]}
-                    </AvatarFallback>
-                  </Avatar>
-                  <span className="text-sm hidden sm:block text-white">
-                    {user?.firstName} {user?.lastName}
-                  </span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="bg-navy-dark border-gray-700">
-                <DropdownMenuItem asChild>
-                  <Link href="/settings" className="text-gray-300 hover:bg-editor-dark focus:bg-editor-dark flex items-center">
-                    <Settings className="h-4 w-4 mr-2" />
-                    Settings
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator className="bg-gray-700" />
-                <DropdownMenuItem 
-                  onClick={handleLogout}
-                  className="text-gray-300 hover:bg-editor-dark focus:bg-editor-dark"
-                >
-                  <LogOut className="h-4 w-4 mr-2" />
-                  Logout
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+          <div className="flex items-center space-x-2 md:space-x-4">
+            {isMobile ? (
+              <MobileNavigation />
+            ) : (
+              <>
+                <Link href="/settings">
+                  <Button variant="ghost" size="sm" className="text-gray-300 hover:text-white">
+                    <Settings className="h-4 w-4" />
+                  </Button>
+                </Link>
+                
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="flex items-center space-x-2 hover:bg-editor-dark">
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage src={user?.profileImageUrl} alt={`${user?.firstName} ${user?.lastName}`} />
+                        <AvatarFallback className="bg-replit-orange text-white">
+                          {user?.firstName?.[0]}{user?.lastName?.[0]}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="text-sm hidden sm:block text-white">
+                        {user?.firstName} {user?.lastName}
+                      </span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="bg-navy-dark border-gray-700">
+                    <DropdownMenuItem asChild>
+                      <Link href="/settings" className="text-gray-300 hover:bg-editor-dark focus:bg-editor-dark flex items-center">
+                        <Settings className="h-4 w-4 mr-2" />
+                        Settings
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator className="bg-gray-700" />
+                    <DropdownMenuItem 
+                      onClick={handleLogout}
+                      className="text-gray-300 hover:bg-editor-dark focus:bg-editor-dark"
+                    >
+                      <LogOut className="h-4 w-4 mr-2" />
+                      Logout
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </>
+            )}
           </div>
         </div>
       </div>

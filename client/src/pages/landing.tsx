@@ -1,6 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Code2, Search, GitBranch, Zap } from "lucide-react";
+import { Link } from "next/link";
+import { Play } from "lucide-react";
 
 export default function Landing() {
   const handleLogin = () => {
@@ -34,45 +36,39 @@ export default function Landing() {
       </header>
 
       {/* Hero Section */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-        <div className="text-center">
-          <h1 className="text-4xl md:text-6xl font-bold text-white mb-6">
+      <div className="text-center max-w-4xl mx-auto px-4">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4 md:mb-6">
             Find Duplicate Code
-            <span className="block text-replit-orange">Across Your Repls</span>
+            <span className="text-replit-orange"> Instantly</span>
           </h1>
-          <p className="text-xl text-gray-300 mb-8 max-w-3xl mx-auto">
-            Connect your Replit account to automatically scan all your projects, identify duplicate code patterns, 
-            and discover opportunities to optimize your codebase.
+          <p className="text-lg md:text-xl text-gray-300 mb-6 md:mb-8 leading-relaxed">
+            Automatically scan your Replit projects to identify duplicate code patterns, 
+            optimize your codebase, and improve development efficiency.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button 
-              onClick={() => window.location.href = "/signup"}
-              size="lg"
-              className="bg-replit-orange hover:bg-orange-600 text-white px-8 py-4 text-lg"
-            >
-              Start Free Trial
-            </Button>
-            <Button 
-              onClick={handleLogin}
-              size="lg"
-              variant="outline"
-              className="border-gray-600 text-white hover:bg-gray-700 px-8 py-4 text-lg"
-            >
-              Sign In with Replit
+          <div className="flex flex-col sm:flex-row gap-3 md:gap-4 justify-center max-w-md sm:max-w-none mx-auto">
+            <Link href="/auth/replit">
+              <Button size="lg" className="bg-replit-orange hover:bg-orange-600 text-white px-6 md:px-8 py-3 md:py-4 text-base md:text-lg w-full sm:w-auto">
+                <Code2 className="mr-2 h-4 w-4 md:h-5 md:w-5" />
+                Connect with Replit
+              </Button>
+            </Link>
+            <Button variant="outline" size="lg" className="border-gray-600 text-gray-300 hover:bg-editor-dark px-6 md:px-8 py-3 md:py-4 text-base md:text-lg w-full sm:w-auto">
+              <Play className="mr-2 h-4 w-4 md:h-5 md:w-5" />
+              Watch Demo
             </Button>
           </div>
         </div>
 
         {/* Features Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mt-20">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 max-w-6xl mx-auto px-4">
           <Card className="bg-navy-dark border-gray-700 hover:border-replit-orange transition-colors">
             <CardHeader>
-              <Search className="w-8 h-8 text-accent-blue mb-2" />
-              <CardTitle className="text-white">Smart Analysis</CardTitle>
+              <Search className="w-6 h-6 md:w-8 md:h-8 text-accent-blue mb-2" />
+              <CardTitle className="text-white text-lg md:text-xl">Smart Detection</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-gray-300">
-                Advanced pattern recognition to detect similar code structures, functions, and components.
+              <p className="text-gray-300 text-sm md:text-base">
+                Advanced pattern matching algorithms to find exact and similar code duplicates across all your projects.
               </p>
             </CardContent>
           </Card>
@@ -101,17 +97,7 @@ export default function Landing() {
             </CardContent>
           </Card>
 
-          <Card className="bg-navy-dark border-gray-700 hover:border-replit-orange transition-colors">
-            <CardHeader>
-              <Zap className="w-8 h-8 text-yellow-400 mb-2" />
-              <CardTitle className="text-white">Instant Results</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-gray-300">
-                Fast analysis powered by intelligent algorithms to quickly identify optimization opportunities.
-              </p>
-            </CardContent>
-          </Card>
+          
         </div>
 
         {/* Stats Section */}

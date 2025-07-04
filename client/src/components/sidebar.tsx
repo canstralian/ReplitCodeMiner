@@ -23,23 +23,23 @@ export default function Sidebar({ stats, duplicates, onRefresh }: SidebarProps) 
   ];
 
   return (
-    <aside className="w-64 bg-navy-dark border-r border-gray-700 flex-shrink-0 overflow-y-auto">
-      <div className="p-4">
-        <div className="space-y-6">
+    <aside className="w-full md:w-64 bg-navy-dark border-r border-gray-700 flex-shrink-0 overflow-y-auto max-h-screen md:max-h-none">
+      <div className="p-3 md:p-4">
+        <div className="space-y-4 md:space-y-6">
           {/* Projects Overview */}
           <div>
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-medium text-gray-400 uppercase tracking-wider">Overview</h3>
+            <div className="flex items-center justify-between mb-2 md:mb-3">
+              <h3 className="text-xs md:text-sm font-medium text-gray-400 uppercase tracking-wider">Overview</h3>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={onRefresh}
                 className="text-gray-400 hover:text-white p-1"
               >
-                <RefreshCw className="h-4 w-4" />
+                <RefreshCw className="h-3 w-3 md:h-4 md:w-4" />
               </Button>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1 md:space-y-2">
               <div className="flex items-center justify-between p-2 rounded-lg bg-editor-dark">
                 <span className="text-sm text-gray-300">Total Projects</span>
                 <span className="text-replit-orange font-semibold">
@@ -63,8 +63,8 @@ export default function Sidebar({ stats, duplicates, onRefresh }: SidebarProps) 
 
           {/* Quick Filters */}
           <div>
-            <h3 className="text-sm font-medium text-gray-400 uppercase tracking-wider mb-3">Quick Filters</h3>
-            <div className="space-y-2">
+            <h3 className="text-xs md:text-sm font-medium text-gray-400 uppercase tracking-wider mb-2 md:mb-3">Quick Filters</h3>
+            <div className="space-y-1 md:space-y-2">
               <Link href="/">
                 <Button
                   variant="ghost"
@@ -97,8 +97,8 @@ export default function Sidebar({ stats, duplicates, onRefresh }: SidebarProps) 
 
           {/* Project Types */}
           <div>
-            <h3 className="text-sm font-medium text-gray-400 uppercase tracking-wider mb-3">Project Types</h3>
-            <div className="space-y-2">
+            <h3 className="text-xs md:text-sm font-medium text-gray-400 uppercase tracking-wider mb-2 md:mb-3">Project Types</h3>
+            <div className="space-y-1 md:space-y-2">
               {projectTypes.map((type) => (
                 <div key={type.name} className="flex items-center space-x-2 p-1">
                   <Checkbox className="border-gray-600 data-[state=checked]:bg-replit-orange data-[state=checked]:border-replit-orange" />
@@ -112,8 +112,8 @@ export default function Sidebar({ stats, duplicates, onRefresh }: SidebarProps) 
           {/* Recent Duplicates */}
           {duplicates && duplicates.length > 0 && (
             <div>
-              <h3 className="text-sm font-medium text-gray-400 uppercase tracking-wider mb-3">Recent Duplicates</h3>
-              <div className="space-y-2">
+              <h3 className="text-xs md:text-sm font-medium text-gray-400 uppercase tracking-wider mb-2 md:mb-3">Recent Duplicates</h3>
+              <div className="space-y-1 md:space-y-2">
                 {duplicates.slice(0, 5).map((duplicate: any) => (
                   <div key={duplicate.id} className="p-2 rounded-lg bg-editor-dark">
                     <div className="flex items-center space-x-2 mb-1">
@@ -133,8 +133,8 @@ export default function Sidebar({ stats, duplicates, onRefresh }: SidebarProps) 
 
           {/* Analysis Status */}
           <div>
-            <h3 className="text-sm font-medium text-gray-400 uppercase tracking-wider mb-3">Analysis Status</h3>
-            <div className="space-y-2">
+            <h3 className="text-xs md:text-sm font-medium text-gray-400 uppercase tracking-wider mb-2 md:mb-3">Analysis Status</h3>
+            <div className="space-y-1 md:space-y-2">
               <div className="flex items-center space-x-2 p-2 rounded-lg bg-editor-dark">
                 <CheckCircle className="h-4 w-4 text-success-green" />
                 <div className="flex-1">
@@ -142,7 +142,7 @@ export default function Sidebar({ stats, duplicates, onRefresh }: SidebarProps) 
                   <div className="text-xs text-gray-500">2 hours ago</div>
                 </div>
               </div>
-              <Button className="w-full bg-replit-orange hover:bg-orange-600 text-sm">
+              <Button className="w-full bg-replit-orange hover:bg-orange-600 text-xs md:text-sm">
                 Run Full Analysis
               </Button>
             </div>
