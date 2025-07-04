@@ -81,39 +81,60 @@ export const storage = {
   },
 
   async storeAnalysisResults(userId: string, results: AnalysisResult[]): Promise<void> {
-    for (const result of results) {
-      // Store code patterns
-      for (const pattern of result.patterns) {
-        await db.insert(codePatterns)
-          .values({
-            userId,
-            projectId: result.projectId,
-            filePath: pattern.filePath,
-            patternHash: pattern.patternHash,
-            codeSnippet: pattern.codeSnippet,
-            patternType: pattern.patternType,
-            lineStart: pattern.lineStart,
-            lineEnd: pattern.lineEnd,
-          })
-          .onConflictDoNothing();
-      }
+    try {
+      return await db.transaction(async (tx) => {
+        for (const result of results) {
+          // Batch insert code patterns
+          if (result.patterns.length > 0) {
+            const patternValues = result.patterns.map(pattern => ({
+              userId,
+              projectId: result.projectId,
+              filePath: pattern.filePath,
+              patternHash: pattern.patternHash,
+              codeSnippet: pattern.codeSnippet,
+              patternType: pattern.patternType,
+              lineStart: pattern.lineStart,
+              lineEnd: pattern.lineEnd,
+            }));
 
-      // Store duplicate groups
-      for (const duplicate of result.duplicates) {
-        await db.insert(duplicateGroups)
-          .values({
-            userId,
-            patternHash: duplicate.patternHash,
-            similarityScore: duplicate.similarityScore,
-            patternType: duplicate.patternType,
-          })
-          .onConflictDoNothing();
-      }
+            // Insert in batches of 100
+            for (let i = 0; i < patternValues.length; i += 100) {
+              const batch = patternValues.slice(i, i + 100);
+              await tx.insert(codePatterns)
+                .values(batch)
+                .onConflictDoNothing();
+            }
+          }
+
+          // Batch insert duplicate groups
+          if (result.duplicates.length > 0) {
+            const duplicateValues = result.duplicates.map(duplicate => ({
+              userId,
+              patternHash: duplicate.patternHash,
+              similarityScore: duplicate.similarityScore.toString(),
+              patternType: duplicate.patternType,
+            }));
+
+            await tx.insert(duplicateGroups)
+              .values(duplicateValues)
+              .onConflictDoNothing();
+          }
+        }
+      });
+    } catch (error) {
+      console.error('Error storing analysis results:', error);
+      throw new Error(`Failed to store analysis results: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   },
 
   async getUserDuplicates(userId: string) {
-    return await db.select().from(duplicateGroups).where(eq(duplicateGroups.userId, userId));
+    try {
+      return await db.select().from(duplicateGroups).where(eq(duplicateGroups.userId, userId));
+    } catch (error) {
+      console.error('Error fetching user duplicates:', error);
+      // Return empty array if table doesn't exist or other DB errors
+      return [];
+    }
   },
 
   async getDuplicateGroup(userId: string, groupId: number) {

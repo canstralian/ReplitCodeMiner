@@ -4,13 +4,25 @@ import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import { ReplitApiService } from "./replitApi";
 import { insertProjectSchema } from "@shared/schema";
+import { performanceMiddleware, rateLimitMiddleware, getPerformanceStats } from "./middleware";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Add performance monitoring
+  app.use(performanceMiddleware);
+  
+  // Add rate limiting
+  app.use('/api/', rateLimitMiddleware(60000, 100)); // 100 requests per minute
+  
   // Auth middleware
   await setupAuth(app);
 
   const replitApi = new ReplitApiService();
+
+  // Performance monitoring endpoint
+  app.get('/api/performance', isAuthenticated, (req, res) => {
+    res.json(getPerformanceStats());
+  });
 
   // Auth routes
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
