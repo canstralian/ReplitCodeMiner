@@ -5,6 +5,7 @@ import { setupAuth, isAuthenticated } from "./replitAuth";
 import { ReplitApiService } from "./replitApi";
 import { insertProjectSchema } from "@shared/schema";
 import { performanceMiddleware, rateLimitMiddleware, getPerformanceStats } from "./middleware";
+import { taskadeService } from "./taskadeService";
 import { z } from "zod";
 import AnalysisService from './analysisService';
 
@@ -81,9 +82,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const results = await replitApi.analyzeProjects(req.user.access_token, projectIds);
       await storage.storeAnalysisResults(userId, results);
 
+      // Get stats and notify Taskade
+      const stats = await storage.getUserProjectStats(userId);
+      await taskadeService.notifyAnalysisComplete(userId, stats);
+
       res.json({ message: "Analysis completed", results });
     } catch (error) {
       console.error("Error analyzing projects:", error);
+      await taskadeService.notifyError("Project analysis failed", { userId: req.user?.claims?.sub, error: error.message });
       res.status(500).json({ message: "Failed to analyze projects" });
     }
   });
@@ -132,6 +138,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error searching code patterns:", error);
       res.status(500).json({ message: "Failed to search code patterns" });
+    }
+  });
+
+  // Taskade integration endpoints
+  app.post('/api/taskade/notify', isAuthenticated, async (req: any, res) => {
+    try {
+      const { title, description, status, metadata } = req.body;
+      
+      const success = await taskadeService.sendNotification({
+        title,
+        description,
+        status,
+        metadata,
+      });
+
+      res.json({ success, message: success ? 'Notification sent' : 'Failed to send notification' });
+    } catch (error) {
+      console.error("Error sending Taskade notification:", error);
+      res.status(500).json({ message: "Failed to send notification" });
+    }
+  });
+
+  app.post('/api/taskade/task', isAuthenticated, async (req: any, res) => {
+    try {
+      const { title, description, assignee } = req.body;
+      
+      const success = await taskadeService.createTask(title, description, assignee);
+      
+      res.json({ success, message: success ? 'Task created' : 'Failed to create task' });
+    } catch (error) {
+      console.error("Error creating Taskade task:", error);
+      res.status(500).json({ message: "Failed to create task" });
     }
   });
 

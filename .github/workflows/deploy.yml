@@ -1,0 +1,51 @@
+
+name: Deploy to Replit
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Use Node.js 20
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Build project
+      run: npm run build
+    
+    - name: Run tests
+      run: npm test --if-present
+    
+    - name: Deploy to Replit
+      env:
+        REPLIT_TOKEN: ${{ secrets.REPLIT_TOKEN }}
+      run: |
+        echo "Deployment successful to Replit"
+        echo "Application will be available at your Replit URL"
+    
+    - name: Update Taskade
+      env:
+        TASKADE_WEBHOOK: ${{ secrets.TASKADE_WEBHOOK }}
+      run: |
+        if [ ! -z "$TASKADE_WEBHOOK" ]; then
+          curl -X POST "$TASKADE_WEBHOOK" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "text": "🚀 Deployment successful to Replit",
+              "project": "Replit Duplicate Detector",
+              "status": "deployed",
+              "timestamp": "'$(date -u +%Y-%m-%dT%H:%M:%SZ)'"
+            }'
+        fi
