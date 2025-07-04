@@ -1,6 +1,7 @@
 import { Button } from "./ui/button";
 import { Checkbox } from "./ui/checkbox";
 import { RefreshCw, Code, Copy, Search, CheckCircle } from "lucide-react";
+import { Link, useLocation } from "wouter";
 
 interface SidebarProps {
   stats?: {
@@ -64,27 +65,33 @@ export default function Sidebar({ stats, duplicates, onRefresh }: SidebarProps) 
           <div>
             <h3 className="text-sm font-medium text-gray-400 uppercase tracking-wider mb-3">Quick Filters</h3>
             <div className="space-y-2">
-              <Button
-                variant="ghost"
-                className="w-full justify-start text-left p-2 rounded-lg hover:bg-editor-dark transition-colors"
-              >
-                <Code className="h-4 w-4 mr-2 text-accent-blue" />
-                <span className="text-sm text-gray-300">All Projects</span>
-              </Button>
-              <Button
-                variant="ghost"
-                className="w-full justify-start text-left p-2 rounded-lg hover:bg-editor-dark transition-colors"
-              >
-                <Copy className="h-4 w-4 mr-2 text-yellow-400" />
-                <span className="text-sm text-gray-300">Potential Duplicates</span>
-              </Button>
-              <Button
-                variant="ghost"
-                className="w-full justify-start text-left p-2 rounded-lg hover:bg-editor-dark transition-colors"
-              >
-                <Search className="h-4 w-4 mr-2 text-success-green" />
-                <span className="text-sm text-gray-300">Recent Searches</span>
-              </Button>
+              <Link href="/">
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start text-left p-2 rounded-lg hover:bg-editor-dark transition-colors"
+                >
+                  <Code className="h-4 w-4 mr-2 text-accent-blue" />
+                  <span className="text-sm text-gray-300">All Projects</span>
+                </Button>
+              </Link>
+              <Link href="/?filter=duplicates">
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start text-left p-2 rounded-lg hover:bg-editor-dark transition-colors"
+                >
+                  <Copy className="h-4 w-4 mr-2 text-yellow-400" />
+                  <span className="text-sm text-gray-300">Potential Duplicates</span>
+                </Button>
+              </Link>
+              <Link href="/recent-searches">
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start text-left p-2 rounded-lg hover:bg-editor-dark transition-colors"
+                >
+                  <Search className="h-4 w-4 mr-2 text-success-green" />
+                  <span className="text-sm text-gray-300">Recent Searches</span>
+                </Button>
+              </Link>
             </div>
           </div>
 

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import Header from "../components/header";
 import Sidebar from "../components/sidebar";
 import ProjectCard from "../components/project-card";
@@ -13,6 +14,10 @@ import { Search, SlidersHorizontal, Grid3X3, List, Crown, Clock } from "lucide-r
 
 
 export default function Dashboard() {
+  const [location] = useLocation();
+  const searchParams = new URLSearchParams(location.split('?')[1] || '');
+  const filterParam = searchParams.get('filter');
+  
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedLanguage, setSelectedLanguage] = useState("all");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
@@ -60,7 +65,10 @@ export default function Dashboard() {
     const matchesLanguage = selectedLanguage === "all" || 
       project.language?.toLowerCase() === selectedLanguage.toLowerCase();
     
-    return matchesSearch && matchesLanguage;
+    const matchesFilter = filterParam !== "duplicates" || 
+      (project.duplicateStatus && project.duplicateStatus !== "none");
+    
+    return matchesSearch && matchesLanguage && matchesFilter;
   });
 
   return (

@@ -9,6 +9,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
+import { Link, useLocation } from "wouter";
 
 export default function Header() {
   const { user } = useAuth();
@@ -33,9 +34,11 @@ export default function Header() {
           </div>
           
           <div className="flex items-center space-x-4">
-            <Button variant="ghost" size="sm" className="text-gray-300 hover:text-white">
-              <Settings className="h-4 w-4" />
-            </Button>
+            <Link href="/settings">
+              <Button variant="ghost" size="sm" className="text-gray-300 hover:text-white">
+                <Settings className="h-4 w-4" />
+              </Button>
+            </Link>
             
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -52,9 +55,11 @@ export default function Header() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="bg-navy-dark border-gray-700">
-                <DropdownMenuItem className="text-gray-300 hover:bg-editor-dark focus:bg-editor-dark">
-                  <Settings className="h-4 w-4 mr-2" />
-                  Settings
+                <DropdownMenuItem asChild>
+                  <Link href="/settings" className="text-gray-300 hover:bg-editor-dark focus:bg-editor-dark flex items-center">
+                    <Settings className="h-4 w-4 mr-2" />
+                    Settings
+                  </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator className="bg-gray-700" />
                 <DropdownMenuItem 

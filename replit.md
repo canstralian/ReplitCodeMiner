@@ -89,6 +89,12 @@ The deployment uses autoscale configuration and serves the frontend through the 
 
 - June 14, 2025. Initial setup
 - July 4, 2025. Added PostgreSQL database integration with Drizzle ORM
+- January 3, 2025. Fixed orphaned links:
+  - Created Settings page with comprehensive user preferences management
+  - Created Recent Searches page for search history tracking
+  - Connected all navigation buttons to appropriate pages
+  - Added filter support to Dashboard for "Potential Duplicates" view
+  - Implemented back navigation buttons for improved UX
 
 ## Database Status
 
