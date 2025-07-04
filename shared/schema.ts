@@ -13,21 +13,22 @@ export const users = pgTable("users", {
 });
 
 export const projects = pgTable("projects", {
-  id: text("id").primaryKey(),
+  id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
   userId: text("user_id").notNull().references(() => users.id),
   title: text("title").notNull(),
   description: text("description"),
-  language: text("language").notNull(),
+  language: text("language"),
   url: text("url").notNull(),
   fileCount: integer("file_count").default(0),
   lastUpdated: timestamp("last_updated").defaultNow(),
   createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 export const codePatterns = pgTable("code_patterns", {
   id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
   userId: text("user_id").notNull().references(() => users.id),
-  projectId: text("project_id").notNull().references(() => projects.id),
+  projectId: integer("project_id").notNull().references(() => projects.id),
   filePath: text("file_path").notNull(),
   patternHash: text("pattern_hash").notNull(),
   codeSnippet: text("code_snippet").notNull(),
