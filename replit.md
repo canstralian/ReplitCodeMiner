@@ -88,6 +88,19 @@ The deployment uses autoscale configuration and serves the frontend through the 
 ## Changelog
 
 - June 14, 2025. Initial setup
+- July 4, 2025. Added PostgreSQL database integration with Drizzle ORM
+
+## Database Status
+
+The application now has a fully configured PostgreSQL database with the following tables:
+- `users`: Stores user profile information from Replit OAuth
+- `projects`: Caches Replit project metadata
+- `code_patterns`: Stores identified code patterns for analysis
+- `duplicate_groups`: Groups related duplicate patterns
+- `pattern_groups`: Links patterns to duplicate groups
+- `sessions`: Required for Replit authentication session management
+
+Database connection is configured using @neondatabase/serverless with proper WebSocket support for Replit's environment.
 
 ## User Preferences
 
