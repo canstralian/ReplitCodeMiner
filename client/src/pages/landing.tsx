@@ -132,6 +132,139 @@ export default function Landing() {
           </div>
         </div>
 
+        {/* Pricing Section */}
+        <div className="mt-20">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-white mb-4">
+              Simple, Transparent Pricing
+            </h2>
+            <p className="text-gray-300 text-lg">
+              Choose the plan that works for your development needs
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            {/* Free Trial */}
+            <Card className="bg-navy-dark border-gray-700 relative">
+              <CardHeader>
+                <CardTitle className="text-white text-xl">Free Trial</CardTitle>
+                <div className="text-3xl font-bold text-replit-orange">$0</div>
+                <p className="text-gray-300">7 days free</p>
+              </CardHeader>
+              <CardContent>
+                <ul className="space-y-3 text-gray-300">
+                  <li className="flex items-center">
+                    <Code2 className="w-4 h-4 text-success-green mr-2" />
+                    Up to 5 projects
+                  </li>
+                  <li className="flex items-center">
+                    <Code2 className="w-4 h-4 text-success-green mr-2" />
+                    Basic duplicate detection
+                  </li>
+                  <li className="flex items-center">
+                    <Code2 className="w-4 h-4 text-success-green mr-2" />
+                    Pattern comparison
+                  </li>
+                  <li className="flex items-center">
+                    <Code2 className="w-4 h-4 text-success-green mr-2" />
+                    Export results
+                  </li>
+                </ul>
+                <Button 
+                  onClick={() => window.location.href = "/signup"}
+                  className="w-full mt-6 bg-replit-orange hover:bg-orange-600"
+                >
+                  Start Free Trial
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Pro Plan */}
+            <Card className="bg-navy-dark border-replit-orange relative">
+              <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+                <span className="bg-replit-orange text-white px-3 py-1 rounded-full text-sm font-medium">
+                  Most Popular
+                </span>
+              </div>
+              <CardHeader>
+                <CardTitle className="text-white text-xl">Pro</CardTitle>
+                <div className="text-3xl font-bold text-replit-orange">$9</div>
+                <p className="text-gray-300">per month</p>
+              </CardHeader>
+              <CardContent>
+                <ul className="space-y-3 text-gray-300">
+                  <li className="flex items-center">
+                    <Code2 className="w-4 h-4 text-success-green mr-2" />
+                    Unlimited projects
+                  </li>
+                  <li className="flex items-center">
+                    <Code2 className="w-4 h-4 text-success-green mr-2" />
+                    Advanced pattern analysis
+                  </li>
+                  <li className="flex items-center">
+                    <Code2 className="w-4 h-4 text-success-green mr-2" />
+                    Real-time notifications
+                  </li>
+                  <li className="flex items-center">
+                    <Code2 className="w-4 h-4 text-success-green mr-2" />
+                    Priority support
+                  </li>
+                  <li className="flex items-center">
+                    <Code2 className="w-4 h-4 text-success-green mr-2" />
+                    API access
+                  </li>
+                </ul>
+                <Button 
+                  onClick={handleLogin}
+                  className="w-full mt-6 bg-replit-orange hover:bg-orange-600"
+                >
+                  Get Pro
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Enterprise Plan */}
+            <Card className="bg-navy-dark border-gray-700 relative">
+              <CardHeader>
+                <CardTitle className="text-white text-xl">Enterprise</CardTitle>
+                <div className="text-3xl font-bold text-replit-orange">$29</div>
+                <p className="text-gray-300">per month</p>
+              </CardHeader>
+              <CardContent>
+                <ul className="space-y-3 text-gray-300">
+                  <li className="flex items-center">
+                    <Code2 className="w-4 h-4 text-success-green mr-2" />
+                    Everything in Pro
+                  </li>
+                  <li className="flex items-center">
+                    <Code2 className="w-4 h-4 text-success-green mr-2" />
+                    Team collaboration
+                  </li>
+                  <li className="flex items-center">
+                    <Code2 className="w-4 h-4 text-success-green mr-2" />
+                    Advanced analytics
+                  </li>
+                  <li className="flex items-center">
+                    <Code2 className="w-4 h-4 text-success-green mr-2" />
+                    Custom integrations
+                  </li>
+                  <li className="flex items-center">
+                    <Code2 className="w-4 h-4 text-success-green mr-2" />
+                    Dedicated support
+                  </li>
+                </ul>
+                <Button 
+                  onClick={handleLogin}
+                  variant="outline"
+                  className="w-full mt-6 border-gray-600 text-white hover:bg-gray-700"
+                >
+                  Contact Sales
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
         {/* CTA Section */}
         <div className="mt-20 text-center bg-navy-dark rounded-2xl p-12">
           <h2 className="text-3xl font-bold text-white mb-4">

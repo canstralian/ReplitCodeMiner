@@ -7,7 +7,10 @@ import ComparisonModal from "../components/comparison-modal";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
-import { Search, SlidersHorizontal, Grid3X3, List } from "lucide-react";
+import { Card, CardContent } from "../components/ui/card";
+import { Search, SlidersHorizontal, Grid3X3, List, Crown, Clock } from "lucide-react";
+
+
 
 export default function Dashboard() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -49,7 +52,7 @@ export default function Dashboard() {
     }
   };
 
-  const filteredProjects = projects.filter((project: any) => {
+  const filteredProjects = (projects as any[]).filter((project: any) => {
     const matchesSearch = !searchQuery || 
       project.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       project.description?.toLowerCase().includes(searchQuery.toLowerCase());
@@ -66,8 +69,8 @@ export default function Dashboard() {
       
       <div className="flex h-screen pt-16">
         <Sidebar 
-          stats={stats}
-          duplicates={duplicates}
+          stats={stats as any}
+          duplicates={duplicates as any}
           onRefresh={handleRefreshProjects}
         />
         
@@ -104,6 +107,41 @@ export default function Dashboard() {
                 </Button>
               </div>
             </div>
+          </div>
+
+          {/* Trial Status Banner */}
+          <div className="bg-gradient-to-r from-replit-orange to-orange-600 p-4">
+            <Card className="bg-white/10 backdrop-blur-sm border-white/20">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <Crown className="h-6 w-6 text-yellow-300" />
+                    <div>
+                      <h3 className="font-semibold text-white">Free Trial Active</h3>
+                      <p className="text-white/90 text-sm">
+                        <Clock className="inline h-4 w-4 mr-1" />
+                        5 days remaining • Up to 5 projects
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex space-x-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      className="bg-white/20 border-white/30 text-white hover:bg-white/30"
+                    >
+                      View Plans
+                    </Button>
+                    <Button 
+                      size="sm"
+                      className="bg-white text-replit-orange hover:bg-gray-100"
+                    >
+                      Upgrade to Pro
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
 
           {/* Content Area */}
