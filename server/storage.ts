@@ -1,4 +1,3 @@
-
 import { users, projects, codePatterns, duplicateGroups, patternGroups, type User, type UpsertUser, type Project, type InsertProject, type CodePattern, type InsertCodePattern, type DuplicateGroup, type InsertDuplicateGroup } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, count } from "drizzle-orm";
@@ -150,7 +149,7 @@ export const storage = {
     patternType?: string;
   }) {
     let query = db.select().from(codePatterns).where(eq(codePatterns.userId, userId));
-    
+
     // Add more sophisticated search logic here
     return await query;
   },

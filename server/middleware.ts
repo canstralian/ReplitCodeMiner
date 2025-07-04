@@ -1,4 +1,3 @@
-
 import { Request, Response, NextFunction } from 'express';
 
 interface PerformanceMetrics {
@@ -12,56 +11,110 @@ interface PerformanceMetrics {
 
 class PerformanceMonitor {
   private metrics: PerformanceMetrics[] = [];
-  private readonly maxMetrics = 1000;
+  private readonly MAX_METRICS = 1000;
+  private endpointStats: Map<string, {
+    count: number;
+    totalTime: number;
+    errors: number;
+    lastAccess: number;
+  }> = new Map();
 
-  addMetric(metric: PerformanceMetrics): void {
+  addMetric(metric: PerformanceMetrics) {
     this.metrics.push(metric);
-    
-    // Keep only the last N metrics to prevent memory leaks
-    if (this.metrics.length > this.maxMetrics) {
-      this.metrics = this.metrics.slice(-this.maxMetrics);
+    if (this.metrics.length > this.MAX_METRICS) {
+      this.metrics.shift();
     }
-  }
 
-  getAverageResponseTime(endpoint?: string): number {
-    const relevantMetrics = endpoint 
-      ? this.metrics.filter(m => m.endpoint === endpoint)
-      : this.metrics;
-    
-    if (relevantMetrics.length === 0) return 0;
-    
-    const total = relevantMetrics.reduce((sum, metric) => sum + metric.duration, 0);
-    return total / relevantMetrics.length;
-  }
+    // Track per-endpoint statistics
+    const key = `${metric.method}:${metric.endpoint}`;
+    const stats = this.endpointStats.get(key) || {
+      count: 0,
+      totalTime: 0,
+      errors: 0,
+      lastAccess: 0
+    };
 
-  getSlowEndpoints(threshold = 1000): PerformanceMetrics[] {
-    return this.metrics.filter(m => m.duration > threshold);
+    stats.count++;
+    stats.totalTime += metric.duration;
+    stats.lastAccess = metric.timestamp;
+
+    if (metric.statusCode >= 400) {
+      stats.errors++;
+    }
+
+    this.endpointStats.set(key, stats);
   }
 
   getStats() {
+    if (this.metrics.length === 0) return null;
+
+    const durations = this.metrics.map(m => m.duration);
+    const avg = durations.reduce((a, b) => a + b, 0) / durations.length;
+    const min = Math.min(...durations);
+    const max = Math.max(...durations);
+
+    // Calculate percentiles
+    const sorted = [...durations].sort((a, b) => a - b);
+    const p95 = sorted[Math.floor(sorted.length * 0.95)];
+    const p99 = sorted[Math.floor(sorted.length * 0.99)];
+
+    // Get endpoint performance breakdown
+    const endpointBreakdown = Array.from(this.endpointStats.entries())
+      .map(([endpoint, stats]) => ({
+        endpoint,
+        averageTime: Math.round(stats.totalTime / stats.count),
+        requestCount: stats.count,
+        errorRate: Math.round((stats.errors / stats.count) * 100),
+        lastAccess: stats.lastAccess
+      }))
+      .sort((a, b) => b.averageTime - a.averageTime);
+
     return {
       totalRequests: this.metrics.length,
-      averageResponseTime: this.getAverageResponseTime(),
-      slowRequests: this.getSlowEndpoints().length,
-      endpointStats: this.getEndpointStats(),
+      averageResponseTime: Math.round(avg),
+      minResponseTime: min,
+      maxResponseTime: max,
+      p95ResponseTime: p95,
+      p99ResponseTime: p99,
+      slowRequests: this.metrics.filter(m => m.duration > 1000).length,
+      errorRate: Math.round((this.metrics.filter(m => m.statusCode >= 400).length / this.metrics.length) * 100),
+      endpointBreakdown: endpointBreakdown.slice(0, 10), // Top 10 slowest endpoints
+      memoryUsage: process.memoryUsage(),
+      uptime: process.uptime()
     };
   }
 
-  private getEndpointStats() {
-    const stats: Record<string, { count: number; avgTime: number; maxTime: number }> = {};
-    
-    this.metrics.forEach(metric => {
-      if (!stats[metric.endpoint]) {
-        stats[metric.endpoint] = { count: 0, avgTime: 0, maxTime: 0 };
-      }
-      
-      const stat = stats[metric.endpoint];
-      stat.count++;
-      stat.maxTime = Math.max(stat.maxTime, metric.duration);
-      stat.avgTime = (stat.avgTime * (stat.count - 1) + metric.duration) / stat.count;
-    });
-    
-    return stats;
+  getHealthStatus() {
+    const stats = this.getStats();
+    if (!stats) return { status: 'unknown', issues: [] };
+
+    const issues = [];
+    let status = 'healthy';
+
+    // Check for performance issues
+    if (stats.averageResponseTime > 500) {
+      issues.push('High average response time');
+      status = 'degraded';
+    }
+
+    if (stats.errorRate > 5) {
+      issues.push('High error rate');
+      status = 'unhealthy';
+    }
+
+    if (stats.slowRequests > stats.totalRequests * 0.1) {
+      issues.push('Too many slow requests');
+      status = 'degraded';
+    }
+
+    // Check memory usage
+    const memoryUsage = stats.memoryUsage.heapUsed / stats.memoryUsage.heapTotal;
+    if (memoryUsage > 0.9) {
+      issues.push('High memory usage');
+      status = 'degraded';
+    }
+
+    return { status, issues };
   }
 }
 
@@ -69,10 +122,10 @@ const performanceMonitor = new PerformanceMonitor();
 
 export function performanceMiddleware(req: Request, res: Response, next: NextFunction): void {
   const startTime = Date.now();
-  
+
   res.on('finish', () => {
     const duration = Date.now() - startTime;
-    
+
     performanceMonitor.addMetric({
       endpoint: req.path,
       method: req.method,
@@ -81,13 +134,13 @@ export function performanceMiddleware(req: Request, res: Response, next: NextFun
       statusCode: res.statusCode,
       userAgent: req.get('User-Agent'),
     });
-    
+
     // Log slow requests
     if (duration > 1000) {
       console.warn(`Slow request detected: ${req.method} ${req.path} took ${duration}ms`);
     }
   });
-  
+
   next();
 }
 
@@ -102,9 +155,9 @@ export function rateLimitMiddleware(windowMs = 60000, maxRequests = 100) {
   return (req: Request, res: Response, next: NextFunction): void => {
     const clientId = req.ip || 'unknown';
     const now = Date.now();
-    
+
     const clientData = requestCounts.get(clientId);
-    
+
     if (!clientData || now > clientData.resetTime) {
       requestCounts.set(clientId, {
         count: 1,
@@ -112,7 +165,7 @@ export function rateLimitMiddleware(windowMs = 60000, maxRequests = 100) {
       });
       return next();
     }
-    
+
     if (clientData.count >= maxRequests) {
       res.status(429).json({
         error: 'Too many requests',
@@ -120,7 +173,7 @@ export function rateLimitMiddleware(windowMs = 60000, maxRequests = 100) {
       });
       return;
     }
-    
+
     clientData.count++;
     next();
   };
