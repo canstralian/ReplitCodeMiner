@@ -1,0 +1,113 @@
+
+MIT License
+
+Copyright (c) 2025 Replit Duplicate Detector Extension Contributors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+---
+
+## Third-Party Licenses
+
+This project includes code and dependencies from various open-source projects:
+
+### Runtime Dependencies
+
+**@radix-ui/react-* packages**
+- License: MIT
+- Copyright: WorkOS
+- Used for: Accessible UI component primitives
+
+**express**
+- License: MIT
+- Copyright: TJ Holowaychuk and contributors
+- Used for: Web application framework
+
+**react & react-dom**
+- License: MIT
+- Copyright: Meta Platforms, Inc. and affiliates
+- Used for: Frontend user interface library
+
+**drizzle-orm**
+- License: Apache-2.0
+- Copyright: Drizzle Team
+- Used for: TypeScript ORM for database operations
+
+**pg (node-postgres)**
+- License: MIT
+- Copyright: Brian Carlson
+- Used for: PostgreSQL client for Node.js
+
+**tailwindcss**
+- License: MIT
+- Copyright: Tailwind Labs, Inc.
+- Used for: Utility-first CSS framework
+
+**lucide-react**
+- License: ISC
+- Copyright: Lucide Contributors
+- Used for: Icon library
+
+**zod**
+- License: MIT
+- Copyright: Colin McDonnell
+- Used for: TypeScript-first schema validation
+
+### Development Dependencies
+
+**vite**
+- License: MIT
+- Copyright: Evan You and Vite contributors
+- Used for: Frontend build tool and development server
+
+**typescript**
+- License: Apache-2.0
+- Copyright: Microsoft Corporation
+- Used for: Static type checking
+
+**tsx**
+- License: MIT
+- Copyright: Hiroki Osame
+- Used for: TypeScript execution engine
+
+**@types/* packages**
+- License: MIT
+- Copyright: Microsoft Corporation and DefinitelyTyped contributors
+- Used for: TypeScript type definitions
+
+### Additional Acknowledgments
+
+This project is built upon the work of countless open-source contributors. We are grateful for:
+
+- The **Replit** platform and API that enables this extension
+- The **TypeScript** team for excellent tooling and language design
+- The **React** team for the component architecture
+- The **PostgreSQL** community for the robust database system
+- The **Node.js** community for the runtime environment
+- All the maintainers and contributors of the dependencies listed above
+
+### License Compliance
+
+All third-party licenses have been reviewed for compatibility with the MIT License. Full license texts for all dependencies can be found in the `node_modules` directory after installation.
+
+For questions about licensing or to report license compliance issues, please contact: [legal@replitextension.com](mailto:legal@replitextension.com)
+
+### Contributing
+
+By contributing to this project, you agree that your contributions will be licensed under the same MIT License that covers the project. See [CONTRIBUTING.md](CONTRIBUTING.md) for details on the contribution process.
