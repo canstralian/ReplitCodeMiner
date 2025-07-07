@@ -29,7 +29,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Auth routes
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user?.claims?.sub;
       if (!userId) {
         return res.status(400).json({ message: "User ID not found" });
       }
@@ -49,7 +49,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Profile endpoint for secure user data retrieval
   app.get('/api/profile', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user?.claims?.sub;
       if (!userId) {
         return res.status(400).json({ message: "User ID not found" });
       }
@@ -82,10 +82,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Projects routes
   app.get('/api/projects', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user?.claims?.sub;
       const { refresh } = req.query;
 
+      if (!userId) {
+        return res.status(400).json({ message: "User ID not found" });
+      }
+
       if (refresh === 'true') {
+        if (!req.user?.access_token) {
+          return res.status(401).json({ message: "Access token not found" });
+        }
         // Fetch fresh data from Replit API
         const replitProjects = await replitApi.fetchUserProjects(req.user.access_token);
         await storage.syncUserProjects(userId, replitProjects);

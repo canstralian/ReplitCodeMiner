@@ -31,12 +31,12 @@ export default function Header() {
               <span className="text-sm text-gray-300">Connected to Replit</span>
             </div>
           </div>
-          
+
           <div className="flex items-center space-x-4">
             <Button variant="ghost" size="sm" className="text-gray-300 hover:text-white">
               <Settings className="h-4 w-4" />
             </Button>
-            
+
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="flex items-center space-x-2 hover:bg-editor-dark">
@@ -75,3 +75,5 @@ export default function Header() {
     </header>
   );
 }
+
+export { Header };

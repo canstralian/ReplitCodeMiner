@@ -173,11 +173,17 @@ export default function Settings() {
                     <Input
                       id="firstName"
                       value={settings.profile.firstName}
-                      onChange={(e) => setSettings(prev => ({
-                        ...prev,
-                        profile: { ...prev.profile, firstName: e.target.value }
-                      }))}
+                      onChange={(e) => {
+                        const value = e.target.value.trim();
+                        if (value.length <= 50) {
+                          setSettings(prev => ({
+                            ...prev,
+                            profile: { ...prev.profile, firstName: value }
+                          }));
+                        }
+                      }}
                       className="bg-editor-dark border-gray-600 text-white"
+                      maxLength={50}
                     />
                   </div>
                   <div className="grid gap-2">
@@ -185,11 +191,17 @@ export default function Settings() {
                     <Input
                       id="lastName"
                       value={settings.profile.lastName}
-                      onChange={(e) => setSettings(prev => ({
-                        ...prev,
-                        profile: { ...prev.profile, lastName: e.target.value }
-                      }))}
+                      onChange={(e) => {
+                        const value = e.target.value.trim();
+                        if (value.length <= 50) {
+                          setSettings(prev => ({
+                            ...prev,
+                            profile: { ...prev.profile, lastName: value }
+                          }));
+                        }
+                      }}
                       className="bg-editor-dark border-gray-600 text-white"
+                      maxLength={50}
                     />
                   </div>
                 </CardContent>

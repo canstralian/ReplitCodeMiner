@@ -1,4 +1,3 @@
-
 import { storage } from './storage';
 import PatternDetector from './patternDetection';
 import { LRUCache } from 'lru-cache';
@@ -24,14 +23,14 @@ export class AnalysisService {
 
   constructor() {
     this.storage = storage;
-    
+
     // Initialize caches with optimized settings
     this.analysisCache = new LRUCache({
       max: 100,
       ttl: 1000 * 60 * 30, // 30 minutes
       allowStale: true
     });
-    
+
     this.patternCache = new LRUCache({
       max: 1000,
       ttl: 1000 * 60 * 60, // 1 hour
@@ -41,18 +40,18 @@ export class AnalysisService {
 
   async analyzeProjects(userId: string, projects: any[]): Promise<AnalysisResult> {
     const startTime = Date.now();
-    
+
     // Generate cache key based on project content
     const cacheKey = this.generateCacheKey(userId, projects);
     const cached = this.analysisCache.get(cacheKey);
-    
+
     if (cached && this.isCacheValid(cached, projects)) {
       return cached.result;
     }
 
     // Perform analysis
     const result = await this.performAnalysis(userId, projects);
-    
+
     // Cache result
     this.analysisCache.set(cacheKey, {
       result,
@@ -89,7 +88,7 @@ export class AnalysisService {
     for (const file of allFiles) {
       const cacheKey = `patterns_${PatternDetector.generatePatternHash(file.content)}`;
       let patterns = this.patternCache.get(cacheKey);
-      
+
       if (!patterns) {
         patterns = PatternDetector.extractPatterns(file.content, file.filePath);
         this.patternCache.set(cacheKey, patterns);
@@ -119,7 +118,7 @@ export class AnalysisService {
     for (const [hash, group] of hashGroups) {
       if (group.length > 1) {
         duplicatesFound += group.length - 1;
-        
+
         // Calculate detailed similarity for each pair
         for (let i = 0; i < group.length; i++) {
           for (let j = i + 1; j < group.length; j++) {

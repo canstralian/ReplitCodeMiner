@@ -22,8 +22,13 @@ export const storage = {
   },
 
   async getUser(userId: string): Promise<User | null> {
-    const [user] = await db.select().from(users).where(eq(users.id, userId));
-    return user || null;
+    try {
+      const [user] = await db.select().from(users).where(eq(users.id, userId));
+      return user || null;
+    } catch (error) {
+      console.error('Error fetching user:', error);
+      throw new Error(`Failed to fetch user: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   },
 
   async syncUserProjects(userId: string, replitProjects: ReplitProject[]): Promise<void> {
@@ -147,10 +152,23 @@ export const storage = {
     language?: string;
     patternType?: string;
   }) {
-    let query = db.select().from(codePatterns).where(eq(codePatterns.userId, userId));
+    try {
+      let query = db.select().from(codePatterns).where(eq(codePatterns.userId, userId));
 
-    // Add more sophisticated search logic here
-    return await query;
+      // Add proper parameterized search conditions
+      if (searchParams.language) {
+        query = query.where(sql`${codePatterns.filePath} LIKE ${`%.${searchParams.language}`}`);
+      }
+      
+      if (searchParams.patternType) {
+        query = query.where(eq(codePatterns.patternType, searchParams.patternType));
+      }
+
+      return await query;
+    } catch (error) {
+      console.error('Error searching code patterns:', error);
+      throw new Error(`Failed to search code patterns: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   },
 
   // Get user settings
