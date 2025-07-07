@@ -76,7 +76,7 @@ export const storage = {
       totalDuplicateGroups: 0,
       totalPatterns: 0,
     };
-  }
+  },
 
   async storeAnalysisResults(userId: string, results: AnalysisResult[]): Promise<void> {
     try {
@@ -186,7 +186,7 @@ export const storage = {
         dataRetention: 30,
       }
     };
-  }
+  },
 
   // Update user settings
   async updateUserSettings(userId: string, settings: any) {
