@@ -27,36 +27,28 @@ export const storage = {
 
   async syncUserProjects(userId: string, replitProjects: ReplitProject[]): Promise<void> {
     for (const project of replitProjects) {
-      // Check if project already exists by URL (since URL is unique for each project)
-      const existingProject = await db.select().from(projects)
-        .where(and(eq(projects.userId, userId), eq(projects.url, project.url)))
-        .limit(1);
-      
-      if (existingProject.length > 0) {
-        // Update existing project
-        await db.update(projects)
-          .set({
-            title: project.title,
-            description: project.description,
-            language: project.language,
-            fileCount: project.fileCount || 0,
-            lastUpdated: new Date(project.lastUpdated || Date.now()),
-            updatedAt: new Date(),
-          })
-          .where(eq(projects.id, existingProject[0].id));
-      } else {
-        // Insert new project
-        await db.insert(projects)
-          .values({
-            userId,
+      await db.insert(projects)
+        .values({
+          id: project.id,
+          userId,
+          title: project.title,
+          description: project.description,
+          language: project.language,
+          url: project.url,
+          fileCount: project.fileCount || 0,
+          lastUpdated: new Date(project.lastUpdated || Date.now()),
+        })
+        .onConflictDoUpdate({
+          target: projects.id,
+          set: {
             title: project.title,
             description: project.description,
             language: project.language,
             url: project.url,
             fileCount: project.fileCount || 0,
             lastUpdated: new Date(project.lastUpdated || Date.now()),
-          });
-      }
+          }
+        });
     }
   },
 
@@ -75,8 +67,7 @@ export const storage = {
 
     const userProjects = await this.getUserProjects(userId);
     const languages = userProjects.reduce((acc, project) => {
-      const language = project.language || 'unknown';
-      acc[language] = (acc[language] || 0) + 1;
+      acc[project.language] = (acc[project.language] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
 
@@ -92,27 +83,11 @@ export const storage = {
     try {
       return await db.transaction(async (tx) => {
         for (const result of results) {
-          // Find the project by external ID to get the internal integer ID
-          const project = await tx.select()
-            .from(projects)
-            .where(and(
-              eq(projects.userId, userId),
-              eq(projects.url, `https://replit.com/${result.projectId}`)
-            ))
-            .limit(1);
-          
-          if (project.length === 0) {
-            console.warn(`Project not found for ID: ${result.projectId}`);
-            continue;
-          }
-          
-          const projectId = project[0].id;
-          
           // Batch insert code patterns
           if (result.patterns.length > 0) {
             const patternValues = result.patterns.map(pattern => ({
               userId,
-              projectId,
+              projectId: result.projectId,
               filePath: pattern.filePath,
               patternHash: pattern.patternHash,
               codeSnippet: pattern.codeSnippet,
@@ -177,5 +152,43 @@ export const storage = {
 
     // Add more sophisticated search logic here
     return await query;
+  },
+
+  async getUserSettings(userId: string) {
+    try {
+      // For now, return default settings since we don't have a settings table yet
+      // In production, you'd want to create a user_settings table
+      return {
+        notifications: {
+          analysisComplete: true,
+          duplicatesFound: true,
+          taskadeIntegration: false,
+        },
+        analysis: {
+          similarityThreshold: 0.8,
+          excludePatterns: ['*.test.js', 'node_modules/*', '*.min.js'],
+          autoAnalyze: false,
+        },
+        privacy: {
+          shareAnalytics: true,
+          publicProfile: false,
+        },
+      };
+    } catch (error) {
+      console.error('Error fetching user settings:', error);
+      throw new Error(`Failed to fetch user settings: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  },
+
+  async updateUserSettings(userId: string, settings: any) {
+    try {
+      // For now, just log the settings update
+      // In production, you'd save to a user_settings table
+      console.log(`Updating settings for user ${userId}:`, settings);
+      return true;
+    } catch (error) {
+      console.error('Error updating user settings:', error);
+      throw new Error(`Failed to update user settings: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   },
 };

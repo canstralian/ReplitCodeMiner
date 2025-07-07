@@ -3,9 +3,8 @@ import { useAuth } from "../hooks/useAuth";
 import Landing from "../pages/landing";
 import Dashboard from "../pages/dashboard";
 import Signup from "../pages/signup";
-import Settings from "../pages/settings";
-import RecentSearches from "../pages/recent-searches";
 import NotFound from "../pages/not-found";
+import Settings from "../pages/settings"; //Import the settings page
 
 export default function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -23,6 +22,7 @@ export default function Router() {
       <Switch>
         <Route path="/" component={Landing} />
         <Route path="/signup" component={Signup} />
+        <Route path="/settings" component={Settings} />
         <Route component={NotFound} />
       </Switch>
     );
@@ -32,7 +32,6 @@ export default function Router() {
     <Switch>
       <Route path="/" component={Dashboard} />
       <Route path="/settings" component={Settings} />
-      <Route path="/recent-searches" component={RecentSearches} />
       <Route component={NotFound} />
     </Switch>
   );

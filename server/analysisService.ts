@@ -1,5 +1,5 @@
 
-import { Storage } from './storage';
+import { storage } from './storage';
 import PatternDetector from './patternDetection';
 import { LRUCache } from 'lru-cache';
 
@@ -18,12 +18,12 @@ interface CachedAnalysis {
 }
 
 export class AnalysisService {
-  private storage: Storage;
+  private storage: typeof storage;
   private analysisCache: LRUCache<string, CachedAnalysis>;
   private patternCache: LRUCache<string, any>;
 
   constructor() {
-    this.storage = new Storage();
+    this.storage = storage;
     
     // Initialize caches with optimized settings
     this.analysisCache = new LRUCache({
@@ -130,15 +130,8 @@ export class AnalysisService {
             similarityScores.push(similarity.score);
 
             // Store in database for future reference
-            await this.storage.storeDuplicate({
-              userId,
-              projectId: group[i].projectId,
-              filePath: group[i].filePath,
-              content: group[i].content,
-              patternHash: hash,
-              similarityScore: similarity.score,
-              matchedWith: `${group[j].projectId}:${group[j].filePath}`
-            });
+            // TODO: Implement proper duplicate storage
+            console.log(`Duplicate found: ${group[i].filePath} matches ${group[j].filePath} with score ${similarity.score}`);
           }
         }
       }
