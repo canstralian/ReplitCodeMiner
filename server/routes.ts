@@ -30,11 +30,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
+      if (!userId) {
+        return res.status(400).json({ message: "User ID not found" });
+      }
+      
       const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
       res.json(user);
     } catch (error) {
       console.error("Error fetching user:", error);
       res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
+
+  // Profile endpoint for secure user data retrieval
+  app.get('/api/profile', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      if (!userId) {
+        return res.status(400).json({ message: "User ID not found" });
+      }
+      
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Return sanitized profile data
+      const profileData = {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        profileImageUrl: user.profileImageUrl,
+        createdAt: user.createdAt,
+        // Add computed fields
+        fullName: `${user.firstName || ''} ${user.lastName || ''}`.trim(),
+        initials: `${user.firstName?.charAt(0) || ''}${user.lastName?.charAt(0) || ''}`.toUpperCase(),
+      };
+      
+      res.json(profileData);
+    } catch (error) {
+      console.error("Error fetching profile:", error);
+      res.status(500).json({ message: "Failed to fetch profile" });
     }
   });
 
@@ -177,10 +218,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/settings', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
+      if (!userId) {
+        return res.status(400).json({ message: "User ID not found" });
+      }
+      
       const settings = await storage.getUserSettings(userId);
       res.json(settings);
     } catch (error) {
       console.error("Error fetching user settings:", error);
+      if (error.message === 'User not found') {
+        return res.status(404).json({ message: "User not found" });
+      }
       res.status(500).json({ message: "Failed to fetch settings" });
     }
   });
@@ -188,7 +236,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/settings', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
+      if (!userId) {
+        return res.status(400).json({ message: "User ID not found" });
+      }
+      
       const settings = req.body;
+      
+      // Basic validation
+      if (!settings || typeof settings !== 'object') {
+        return res.status(400).json({ message: "Invalid settings data" });
+      }
       
       await storage.updateUserSettings(userId, settings);
       res.json({ message: "Settings updated successfully" });

@@ -1,129 +1,127 @@
-
-import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
 import { useAuth } from "../hooks/useAuth";
-import Header from "../components/header";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Header } from "../components/header";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Switch } from "../components/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
+import { Slider } from "../components/ui/slider";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
+import { Badge } from "../components/ui/badge";
 import { Separator } from "../components/ui/separator";
-import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar";
-import { Save, User, Bell, Shield, Trash2 } from "lucide-react";
-import { useToast } from "../hooks/use-toast";
-
-interface UserSettings {
-  notifications: {
-    analysisComplete: boolean;
-    duplicatesFound: boolean;
-    taskadeIntegration: boolean;
-  };
-  analysis: {
-    similarityThreshold: number;
-    excludePatterns: string[];
-    autoAnalyze: boolean;
-  };
-  privacy: {
-    shareAnalytics: boolean;
-    publicProfile: boolean;
-  };
-}
+import { AlertCircle, Save, User, Bell, Settings as SettingsIcon, Shield } from "lucide-react";
+import { apiRequest } from "../lib/queryClient";
 
 export default function Settings() {
   const { user } = useAuth();
-  const { toast } = useToast();
   const queryClient = useQueryClient();
-
-  const [settings, setSettings] = useState<UserSettings>({
-    notifications: {
-      analysisComplete: true,
-      duplicatesFound: true,
-      taskadeIntegration: false,
-    },
-    analysis: {
-      similarityThreshold: 0.8,
-      excludePatterns: [],
-      autoAnalyze: false,
-    },
-    privacy: {
-      shareAnalytics: true,
-      publicProfile: false,
-    },
-  });
-
-  const [newExcludePattern, setNewExcludePattern] = useState("");
+  const [isSaved, setIsSaved] = useState(false);
 
   // Fetch user settings
-  const { data: userSettings } = useQuery({
-    queryKey: ["/api/settings"],
+  const { data: userSettings, isLoading: isLoadingSettings } = useQuery({
+    queryKey: ['/api/settings'],
     enabled: !!user,
   });
 
+  // Settings state
+  const [settings, setSettings] = useState({
+    profile: {
+      email: '',
+      firstName: '',
+      lastName: '',
+    },
+    notifications: {
+      emailNotifications: true,
+      taskadeIntegration: true,
+      analysisComplete: true,
+      duplicatesFound: true,
+    },
+    analysis: {
+      autoAnalyze: false,
+      duplicateThreshold: [0.8],
+      excludePatterns: ['test/', 'node_modules/'],
+      includeLanguages: ['javascript', 'python', 'typescript'],
+    },
+    privacy: {
+      profileVisibility: 'private',
+      shareAnalytics: false,
+      dataRetention: [30],
+    }
+  });
+
+  // Update settings state when userSettings loads
+  useEffect(() => {
+    if (userSettings) {
+      setSettings({
+        profile: {
+          email: userSettings.profile?.email || '',
+          firstName: userSettings.profile?.firstName || '',
+          lastName: userSettings.profile?.lastName || '',
+        },
+        notifications: {
+          emailNotifications: userSettings.notifications?.emailNotifications ?? true,
+          taskadeIntegration: userSettings.notifications?.taskadeIntegration ?? true,
+          analysisComplete: userSettings.notifications?.analysisComplete ?? true,
+          duplicatesFound: userSettings.notifications?.duplicatesFound ?? true,
+        },
+        analysis: {
+          autoAnalyze: userSettings.analysis?.autoAnalyze ?? false,
+          duplicateThreshold: [userSettings.analysis?.duplicateThreshold ?? 0.8],
+          excludePatterns: userSettings.analysis?.excludePatterns ?? ['test/', 'node_modules/'],
+          includeLanguages: userSettings.analysis?.includeLanguages ?? ['javascript', 'python', 'typescript'],
+        },
+        privacy: {
+          profileVisibility: userSettings.privacy?.profileVisibility ?? 'private',
+          shareAnalytics: userSettings.privacy?.shareAnalytics ?? false,
+          dataRetention: [userSettings.privacy?.dataRetention ?? 30],
+        }
+      });
+    }
+  }, [userSettings]);
+
   // Save settings mutation
   const saveSettingsMutation = useMutation({
-    mutationFn: async (newSettings: UserSettings) => {
-      const response = await fetch("/api/settings", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newSettings),
-      });
-      if (!response.ok) throw new Error("Failed to save settings");
+    mutationFn: async (newSettings: typeof settings) => {
+      const response = await apiRequest('POST', '/api/settings', newSettings);
       return response.json();
     },
     onSuccess: () => {
-      toast({
-        title: "Settings saved",
-        description: "Your preferences have been updated successfully.",
-      });
-      queryClient.invalidateQueries({ queryKey: ["/api/settings"] });
+      queryClient.invalidateQueries({ queryKey: ['/api/settings'] });
+      setIsSaved(true);
+      setTimeout(() => setIsSaved(false), 2000);
     },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to save settings. Please try again.",
-        variant: "destructive",
-      });
-    },
+    onError: (error) => {
+      console.error('Failed to save settings:', error);
+    }
   });
 
-  const handleSaveSettings = () => {
+  const handleSave = async () => {
     saveSettingsMutation.mutate(settings);
   };
 
-  const addExcludePattern = () => {
-    if (newExcludePattern.trim()) {
-      setSettings(prev => ({
-        ...prev,
-        analysis: {
-          ...prev.analysis,
-          excludePatterns: [...prev.analysis.excludePatterns, newExcludePattern.trim()]
-        }
-      }));
-      setNewExcludePattern("");
-    }
-  };
-
-  const removeExcludePattern = (index: number) => {
-    setSettings(prev => ({
-      ...prev,
-      analysis: {
-        ...prev.analysis,
-        excludePatterns: prev.analysis.excludePatterns.filter((_, i) => i !== index)
-      }
-    }));
-  };
-
   if (!user) {
-    return <div>Loading...</div>;
+    return (
+      <div className="min-h-screen bg-editor-dark flex items-center justify-center">
+        <div className="text-white">Please log in to access settings.</div>
+      </div>
+    );
+  }
+
+  if (isLoadingSettings) {
+    return (
+      <div className="min-h-screen bg-editor-dark flex items-center justify-center">
+        <div className="text-white">Loading settings...</div>
+      </div>
+    );
   }
 
   return (
     <div className="min-h-screen bg-editor-dark">
       <Header />
-      
-      <div className="max-w-4xl mx-auto p-6 pt-24">
+
+      <div className="max-w-5xl mx-auto p-6 pt-24">
         <div className="space-y-6">
           {/* Header */}
           <div>
@@ -131,225 +129,304 @@ export default function Settings() {
             <p className="text-gray-400">Manage your account preferences and analysis settings.</p>
           </div>
 
-          {/* Profile Settings */}
-          <Card className="bg-navy-dark border-gray-700">
-            <CardHeader>
-              <CardTitle className="text-white flex items-center">
-                <User className="h-5 w-5 mr-2" />
-                Profile Information
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center space-x-4">
-                <Avatar className="h-16 w-16">
-                  <AvatarImage src={user.profileImageUrl} alt={`${user.firstName} ${user.lastName}`} />
-                  <AvatarFallback className="bg-replit-orange text-white text-lg">
-                    {user.firstName?.[0]}{user.lastName?.[0]}
-                  </AvatarFallback>
-                </Avatar>
-                <div>
-                  <h3 className="text-lg font-medium text-white">
-                    {user.firstName} {user.lastName}
-                  </h3>
-                  <p className="text-gray-400">{user.email}</p>
-                </div>
-              </div>
-              <p className="text-sm text-gray-500">
-                Profile information is managed through your Replit account.
-              </p>
-            </CardContent>
-          </Card>
-
-          {/* Notification Settings */}
-          <Card className="bg-navy-dark border-gray-700">
-            <CardHeader>
-              <CardTitle className="text-white flex items-center">
-                <Bell className="h-5 w-5 mr-2" />
+          <Tabs defaultValue="profile" className="w-full space-y-4">
+            <TabsList>
+              <TabsTrigger value="profile">
+                <User className="h-4 w-4 mr-2" />
+                Profile
+              </TabsTrigger>
+              <TabsTrigger value="notifications">
+                <Bell className="h-4 w-4 mr-2" />
                 Notifications
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label className="text-white">Analysis Complete</Label>
-                  <p className="text-sm text-gray-400">Get notified when project analysis finishes</p>
-                </div>
-                <Switch
-                  checked={settings.notifications.analysisComplete}
-                  onCheckedChange={(checked) =>
-                    setSettings(prev => ({
-                      ...prev,
-                      notifications: { ...prev.notifications, analysisComplete: checked }
-                    }))
-                  }
-                />
-              </div>
-              
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label className="text-white">Duplicates Found</Label>
-                  <p className="text-sm text-gray-400">Get notified when duplicates are detected</p>
-                </div>
-                <Switch
-                  checked={settings.notifications.duplicatesFound}
-                  onCheckedChange={(checked) =>
-                    setSettings(prev => ({
-                      ...prev,
-                      notifications: { ...prev.notifications, duplicatesFound: checked }
-                    }))
-                  }
-                />
-              </div>
+              </TabsTrigger>
+              <TabsTrigger value="analysis">
+                <SettingsIcon className="h-4 w-4 mr-2" />
+                Analysis
+              </TabsTrigger>
+              <TabsTrigger value="privacy">
+                <Shield className="h-4 w-4 mr-2" />
+                Privacy
+              </TabsTrigger>
+            </TabsList>
+            <Separator />
 
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label className="text-white">Taskade Integration</Label>
-                  <p className="text-sm text-gray-400">Send notifications to Taskade</p>
-                </div>
-                <Switch
-                  checked={settings.notifications.taskadeIntegration}
-                  onCheckedChange={(checked) =>
-                    setSettings(prev => ({
-                      ...prev,
-                      notifications: { ...prev.notifications, taskadeIntegration: checked }
-                    }))
-                  }
-                />
-              </div>
-            </CardContent>
-          </Card>
+            <TabsContent value="profile" className="space-y-4">
+              <Card className="bg-navy-dark border-gray-700">
+                <CardHeader>
+                  <CardTitle className="text-white">Profile Information</CardTitle>
+                  <CardDescription className="text-gray-400">
+                    Manage your basic profile information.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="grid gap-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="email" className="text-white">Email</Label>
+                    <Input
+                      id="email"
+                      value={settings.profile.email}
+                      disabled
+                      className="bg-editor-dark border-gray-600 text-white"
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="firstName" className="text-white">First Name</Label>
+                    <Input
+                      id="firstName"
+                      value={settings.profile.firstName}
+                      onChange={(e) => setSettings(prev => ({
+                        ...prev,
+                        profile: { ...prev.profile, firstName: e.target.value }
+                      }))}
+                      className="bg-editor-dark border-gray-600 text-white"
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="lastName" className="text-white">Last Name</Label>
+                    <Input
+                      id="lastName"
+                      value={settings.profile.lastName}
+                      onChange={(e) => setSettings(prev => ({
+                        ...prev,
+                        profile: { ...prev.profile, lastName: e.target.value }
+                      }))}
+                      className="bg-editor-dark border-gray-600 text-white"
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
 
-          {/* Analysis Settings */}
-          <Card className="bg-navy-dark border-gray-700">
-            <CardHeader>
-              <CardTitle className="text-white">Analysis Preferences</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label className="text-white">Similarity Threshold</Label>
-                <p className="text-sm text-gray-400 mb-2">
-                  Minimum similarity score to consider code as duplicate (0.1 - 1.0)
-                </p>
-                <Input
-                  type="number"
-                  min="0.1"
-                  max="1.0"
-                  step="0.1"
-                  value={settings.analysis.similarityThreshold}
-                  onChange={(e) =>
-                    setSettings(prev => ({
-                      ...prev,
-                      analysis: { ...prev.analysis, similarityThreshold: parseFloat(e.target.value) }
-                    }))
-                  }
-                  className="bg-editor-dark border-gray-600 text-white"
-                />
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label className="text-white">Auto-analyze New Projects</Label>
-                  <p className="text-sm text-gray-400">Automatically analyze projects when they're added</p>
-                </div>
-                <Switch
-                  checked={settings.analysis.autoAnalyze}
-                  onCheckedChange={(checked) =>
-                    setSettings(prev => ({
-                      ...prev,
-                      analysis: { ...prev.analysis, autoAnalyze: checked }
-                    }))
-                  }
-                />
-              </div>
-
-              <div>
-                <Label className="text-white">Exclude Patterns</Label>
-                <p className="text-sm text-gray-400 mb-2">
-                  File patterns to exclude from analysis (e.g., *.test.js, node_modules/*)
-                </p>
-                <div className="flex space-x-2 mb-2">
-                  <Input
-                    value={newExcludePattern}
-                    onChange={(e) => setNewExcludePattern(e.target.value)}
-                    placeholder="*.test.js"
-                    className="bg-editor-dark border-gray-600 text-white"
-                    onKeyPress={(e) => e.key === 'Enter' && addExcludePattern()}
-                  />
-                  <Button onClick={addExcludePattern} className="bg-replit-orange hover:bg-orange-600">
-                    Add
-                  </Button>
-                </div>
-                <div className="space-y-1">
-                  {settings.analysis.excludePatterns.map((pattern, index) => (
-                    <div key={index} className="flex items-center justify-between bg-editor-dark rounded px-3 py-2">
-                      <code className="text-sm text-gray-300">{pattern}</code>
-                      <Button
-                        onClick={() => removeExcludePattern(index)}
-                        variant="ghost"
-                        size="sm"
-                        className="text-red-400 hover:text-red-300"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+            <TabsContent value="notifications" className="space-y-4">
+              <Card className="bg-navy-dark border-gray-700">
+                <CardHeader>
+                  <CardTitle className="text-white">Notification Preferences</CardTitle>
+                  <CardDescription className="text-gray-400">
+                    Customize your notification settings.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label className="text-white">Email Notifications</Label>
+                      <p className="text-sm text-gray-400">Receive important updates via email</p>
                     </div>
-                  ))}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+                    <Switch
+                      checked={settings.notifications.emailNotifications}
+                      onCheckedChange={(checked) => setSettings(prev => ({
+                        ...prev,
+                        notifications: { ...prev.notifications, emailNotifications: checked }
+                      }))}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label className="text-white">Taskade Integration</Label>
+                      <p className="text-sm text-gray-400">Get notified in Taskade</p>
+                    </div>
+                    <Switch
+                      checked={settings.notifications.taskadeIntegration}
+                      onCheckedChange={(checked) => setSettings(prev => ({
+                        ...prev,
+                        notifications: { ...prev.notifications, taskadeIntegration: checked }
+                      }))}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label className="text-white">Analysis Complete</Label>
+                      <p className="text-sm text-gray-400">Get notified when analysis completes</p>
+                    </div>
+                    <Switch
+                      checked={settings.notifications.analysisComplete}
+                      onCheckedChange={(checked) => setSettings(prev => ({
+                        ...prev,
+                        notifications: { ...prev.notifications, analysisComplete: checked }
+                      }))}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label className="text-white">Duplicates Found</Label>
+                      <p className="text-sm text-gray-400">Get notified when duplicates are found</p>
+                    </div>
+                    <Switch
+                      checked={settings.notifications.duplicatesFound}
+                      onCheckedChange={(checked) => setSettings(prev => ({
+                        ...prev,
+                        notifications: { ...prev.notifications, duplicatesFound: checked }
+                      }))}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
 
-          {/* Privacy Settings */}
-          <Card className="bg-navy-dark border-gray-700">
-            <CardHeader>
-              <CardTitle className="text-white flex items-center">
-                <Shield className="h-5 w-5 mr-2" />
-                Privacy & Data
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label className="text-white">Share Analytics</Label>
-                  <p className="text-sm text-gray-400">Help improve the service by sharing anonymous usage data</p>
-                </div>
-                <Switch
-                  checked={settings.privacy.shareAnalytics}
-                  onCheckedChange={(checked) =>
-                    setSettings(prev => ({
-                      ...prev,
-                      privacy: { ...prev.privacy, shareAnalytics: checked }
-                    }))
-                  }
-                />
-              </div>
+            <TabsContent value="analysis" className="space-y-4">
+              <Card className="bg-navy-dark border-gray-700">
+                <CardHeader>
+                  <CardTitle className="text-white">Analysis Preferences</CardTitle>
+                  <CardDescription className="text-gray-400">
+                    Customize code analysis settings.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label className="text-white">Auto Analyze</Label>
+                      <p className="text-sm text-gray-400">Automatically analyze new projects</p>
+                    </div>
+                    <Switch
+                      checked={settings.analysis.autoAnalyze}
+                      onCheckedChange={(checked) => setSettings(prev => ({
+                        ...prev,
+                        analysis: { ...prev.analysis, autoAnalyze: checked }
+                      }))}
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-white">Duplicate Threshold</Label>
+                    <p className="text-sm text-gray-400">Adjust the similarity threshold for duplicate detection</p>
+                    <Slider
+                      defaultValue={settings.analysis.duplicateThreshold}
+                      max={1}
+                      step={0.05}
+                      onValueChange={(value) => setSettings(prev => ({
+                        ...prev,
+                        analysis: { ...prev.analysis, duplicateThreshold: value }
+                      }))}
+                      className="bg-editor-dark border-gray-600 text-white"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-white">Exclude Patterns</Label>
+                    <p className="text-sm text-gray-400">Define patterns to exclude from analysis (e.g., *.test.js)</p>
+                    <Input
+                      placeholder="Add pattern"
+                      className="bg-editor-dark border-gray-600 text-white"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          setSettings(prev => ({
+                            ...prev,
+                            analysis: { ...prev.analysis, excludePatterns: [...prev.analysis.excludePatterns, e.target.value] }
+                          }));
+                          e.target.value = '';
+                        }
+                      }}
+                    />
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {settings.analysis.excludePatterns.map((pattern, index) => (
+                        <Badge key={index} variant="secondary">
+                          {pattern}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="text-white">Include Languages</Label>
+                    <p className="text-sm text-gray-400">Specify languages to include in analysis</p>
+                    <Input
+                      placeholder="Add language"
+                      className="bg-editor-dark border-gray-600 text-white"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          setSettings(prev => ({
+                            ...prev,
+                            analysis: { ...prev.analysis, includeLanguages: [...prev.analysis.includeLanguages, e.target.value] }
+                          }));
+                          e.target.value = '';
+                        }
+                      }}
+                    />
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {settings.analysis.includeLanguages.map((language, index) => (
+                        <Badge key={index} variant="secondary">
+                          {language}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
 
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label className="text-white">Public Profile</Label>
-                  <p className="text-sm text-gray-400">Allow others to see your public analysis statistics</p>
-                </div>
-                <Switch
-                  checked={settings.privacy.publicProfile}
-                  onCheckedChange={(checked) =>
-                    setSettings(prev => ({
-                      ...prev,
-                      privacy: { ...prev.privacy, publicProfile: checked }
-                    }))
-                  }
-                />
-              </div>
-            </CardContent>
-          </Card>
+            <TabsContent value="privacy" className="space-y-4">
+              <Card className="bg-navy-dark border-gray-700">
+                <CardHeader>
+                  <CardTitle className="text-white">Privacy Settings</CardTitle>
+                  <CardDescription className="text-gray-400">
+                    Manage your privacy preferences.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label className="text-white">Share Analytics</Label>
+                      <p className="text-sm text-gray-400">Share anonymous usage data to improve the service</p>
+                    </div>
+                    <Switch
+                      checked={settings.privacy.shareAnalytics}
+                      onCheckedChange={(checked) => setSettings(prev => ({
+                        ...prev,
+                        privacy: { ...prev.privacy, shareAnalytics: checked }
+                      }))}
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-white">Profile Visibility</Label>
+                    <p className="text-sm text-gray-400">Control who can see your profile</p>
+                    <Input
+                      placeholder="Profile Visibility"
+                      className="bg-editor-dark border-gray-600 text-white"
+                      value={settings.privacy.profileVisibility}
+                      onChange={(e) => setSettings(prev => ({
+                        ...prev,
+                        privacy: { ...prev.privacy, profileVisibility: e.target.value }
+                      }))}
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-white">Data Retention</Label>
+                    <p className="text-sm text-gray-400">Choose how long to retain your data</p>
+                    <Slider
+                      defaultValue={settings.privacy.dataRetention}
+                      max={365}
+                      step={30}
+                      onValueChange={(value) => setSettings(prev => ({
+                        ...prev,
+                        privacy: { ...prev.privacy, dataRetention: value }
+                      }))}
+                      className="bg-editor-dark border-gray-600 text-white"
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
 
           {/* Save Button */}
           <div className="flex justify-end">
+            {isSaved && (
+              <Badge variant="outline" className="mr-2">
+                <Save className="h-4 w-4 mr-2" />
+                Settings saved!
+              </Badge>
+            )}
             <Button
-              onClick={handleSaveSettings}
+              onClick={handleSave}
               disabled={saveSettingsMutation.isPending}
               className="bg-replit-orange hover:bg-orange-600"
             >
-              <Save className="h-4 w-4 mr-2" />
-              {saveSettingsMutation.isPending ? "Saving..." : "Save Settings"}
+              {saveSettingsMutation.isPending ? (
+                <>
+                  <AlertCircle className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save className="h-4 w-4 mr-2" />
+                  Save Settings
+                </>
+              )}
             </Button>
           </div>
         </div>

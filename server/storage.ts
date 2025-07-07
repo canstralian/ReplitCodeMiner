@@ -2,6 +2,7 @@ import { users, projects, codePatterns, duplicateGroups, patternGroups, type Use
 import { db } from "./db";
 import { eq, and, count } from "drizzle-orm";
 import type { ReplitProject, AnalysisResult } from "./replitApi";
+import { sql } from "drizzle-orm";
 
 export const storage = {
   async upsertUser(userData: UpsertUser): Promise<User> {
@@ -56,28 +57,26 @@ export const storage = {
     return await db.select().from(projects).where(eq(projects.userId, userId));
   },
 
+  // Get user project statistics
   async getUserProjectStats(userId: string) {
-    const [projectCount] = await db.select({ count: count() })
+    const stats = await db
+      .select({
+        totalProjects: sql<number>`count(distinct ${projects.id})`.as('totalProjects'),
+        totalDuplicateGroups: sql<number>`count(distinct ${duplicateGroups.id})`.as('totalDuplicateGroups'),
+        totalPatterns: sql<number>`count(distinct ${codePatterns.id})`.as('totalPatterns'),
+      })
       .from(projects)
-      .where(eq(projects.userId, userId));
+      .leftJoin(codePatterns, eq(projects.id, codePatterns.projectId))
+      .leftJoin(duplicateGroups, eq(duplicateGroups.userId, projects.userId))
+      .where(eq(projects.userId, userId))
+      .groupBy(projects.userId);
 
-    const [duplicateCount] = await db.select({ count: count() })
-      .from(duplicateGroups)
-      .where(eq(duplicateGroups.userId, userId));
-
-    const userProjects = await this.getUserProjects(userId);
-    const languages = userProjects.reduce((acc, project) => {
-      acc[project.language] = (acc[project.language] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
-
-    return {
-      totalProjects: projectCount.count,
-      duplicatesFound: duplicateCount.count,
-      similarPatterns: 0, // TODO: implement pattern counting
-      languages,
+    return stats[0] || {
+      totalProjects: 0,
+      totalDuplicateGroups: 0,
+      totalPatterns: 0,
     };
-  },
+  }
 
   async storeAnalysisResults(userId: string, results: AnalysisResult[]): Promise<void> {
     try {
@@ -154,41 +153,57 @@ export const storage = {
     return await query;
   },
 
+  // Get user settings
   async getUserSettings(userId: string) {
-    try {
-      // For now, return default settings since we don't have a settings table yet
-      // In production, you'd want to create a user_settings table
-      return {
-        notifications: {
-          analysisComplete: true,
-          duplicatesFound: true,
-          taskadeIntegration: false,
-        },
-        analysis: {
-          similarityThreshold: 0.8,
-          excludePatterns: ['*.test.js', 'node_modules/*', '*.min.js'],
-          autoAnalyze: false,
-        },
-        privacy: {
-          shareAnalytics: true,
-          publicProfile: false,
-        },
-      };
-    } catch (error) {
-      console.error('Error fetching user settings:', error);
-      throw new Error(`Failed to fetch user settings: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    const user = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+    if (!user.length) {
+      throw new Error('User not found');
     }
-  },
 
+    // Return default settings structure with user data
+    return {
+      profile: {
+        email: user[0].email,
+        firstName: user[0].firstName || '',
+        lastName: user[0].lastName || '',
+        profileImageUrl: user[0].profileImageUrl || '',
+      },
+      notifications: {
+        emailNotifications: true,
+        taskadeIntegration: true,
+        analysisComplete: true,
+        duplicatesFound: true,
+      },
+      analysis: {
+        autoAnalyze: false,
+        duplicateThreshold: 0.8,
+        excludePatterns: [],
+        includeLanguages: ['javascript', 'python', 'typescript'],
+      },
+      privacy: {
+        profileVisibility: 'private',
+        shareAnalytics: false,
+        dataRetention: 30,
+      }
+    };
+  }
+
+  // Update user settings
   async updateUserSettings(userId: string, settings: any) {
-    try {
-      // For now, just log the settings update
-      // In production, you'd save to a user_settings table
-      console.log(`Updating settings for user ${userId}:`, settings);
-      return true;
-    } catch (error) {
-      console.error('Error updating user settings:', error);
-      throw new Error(`Failed to update user settings: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    // Update user profile information if provided
+    if (settings.profile) {
+      await db
+        .update(users)
+        .set({
+          firstName: settings.profile.firstName,
+          lastName: settings.profile.lastName,
+          updatedAt: new Date(),
+        })
+        .where(eq(users.id, userId));
     }
-  },
+
+    // For now, other settings are returned as-is since we don't have a settings table
+    // In a production app, you'd want to create a separate settings table
+    return true;
+  }
 };
