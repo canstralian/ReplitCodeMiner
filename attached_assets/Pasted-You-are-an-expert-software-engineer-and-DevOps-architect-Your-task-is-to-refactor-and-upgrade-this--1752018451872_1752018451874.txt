@@ -1,0 +1,94 @@
+You are an expert software engineer and DevOps architect. Your task is to refactor and upgrade this existing application project to **production-ready and release-quality standards**, using Replit for development and GitHub for version control and CI/CD.
+
+---
+
+### 📦 PROJECT DETAILS:
+- Project Type: [e.g. Full-stack app with Flask backend and React frontend]
+- Languages: [e.g. Python, JavaScript]
+- Backend: [e.g. Flask / FastAPI]
+- Frontend: [if applicable, e.g. React / HTML/CSS]
+- Database: [e.g. PostgreSQL / SQLite]
+- Hosting: Replit (Deployments / Web Service)
+
+---
+
+### ✅ OBJECTIVES:
+
+1. **🧹 Code Quality & Structure**
+   - Refactor for modularity and clarity
+   - Follow language-specific linting/formatting (PEP 8, Prettier, ESLint)
+   - Add type hints, docstrings, and clean code practices
+
+2. **🔐 Security Hardening**
+   - Sanitize all inputs and outputs
+   - Add authentication/authorization (JWT, OAuth2, session)
+   - Enable HTTPS/CORS and secure headers
+   - Add rate limiting and access control
+
+3. **🧪 Testing & Coverage**
+   - Add unit + integration tests using `pytest`, `unittest`, or equivalent
+   - Ensure >80% code coverage
+   - Include test suite runner and coverage report
+
+4. **📦 Dependency Management**
+   - Pin versions in `requirements.txt` / `package.json`
+   - Remove unused packages
+   - Add `.env.example`, `.gitignore`, and `.replit` config
+
+5. **🚀 Deployment Readiness**
+   - Use production-ready server (e.g., `gunicorn` for Flask/FastAPI)
+   - Add healthcheck and 404 error handlers
+   - Prepare for Replit Deployment or containerized (optional)
+
+6. **📄 Documentation**
+   - Create `README.md` with:
+     - Overview
+     - Setup & usage
+     - Deployment guide
+     - API documentation
+   - Auto-generate Swagger/OpenAPI docs (for FastAPI or Flask-RESTx)
+
+7. **📊 Monitoring & Logging**
+   - Add structured logging (`loguru`, `logging`, or `winston`)
+   - Expose basic metrics/health endpoints if appropriate
+
+8. **🧱 Frontend Polish (if applicable)**
+   - Ensure responsive UI/UX
+   - Lint and minify JS/CSS
+   - Fix UI bugs and handle loading/errors
+
+---
+
+### 🛠️ CI/CD + RELEASE INTEGRATION
+
+9. **🔁 GitHub Actions CI/CD**
+   - Set up `.github/workflows/ci.yml` for:
+     - Linting, testing, formatting, and security checks
+     - Auto-deploy to Replit or build artifact creation
+   - Optionally add `release.yml` for tagged releases
+
+10. **📜 License and Contributing**
+   - Add appropriate `LICENSE` file (e.g., MIT, Apache-2.0)
+   - Add `CONTRIBUTING.md`:
+     - Dev setup
+     - Branching strategy
+     - Issue/pull request guidelines
+     - Code standards
+
+11. **🏷️ Semantic Versioning & Releases**
+   - Follow [SemVer.org](https://semver.org/) (v1.0.0, etc.)
+   - Add `CHANGELOG.md` (manually or via changelog generator)
+   - Auto-tag and publish releases on GitHub using workflow or manual tags
+
+---
+
+### 📂 OUTPUT EXPECTED:
+When complete, provide:
+- Updated source codebase
+- `README.md`, `LICENSE`, `CONTRIBUTING.md`, `.env.example`, `.gitignore`
+- `.github/workflows/ci.yml` (and `release.yml` if included)
+- `CHANGELOG.md` (new entry for `v1.0.0`)
+- Replit deployment instructions
+- GitHub release/tag (`v1.0.0`)
+
+Target maintainability, DevSecOps readiness, and developer onboarding ease.
