@@ -4,7 +4,7 @@ import Landing from "../pages/landing";
 import Dashboard from "../pages/dashboard";
 import Signup from "../pages/signup";
 import NotFound from "../pages/not-found";
-import Settings from "../pages/settings"; //Import the settings page
+import Settings from "../pages/settings";
 
 export default function Router() {
   const { isAuthenticated, isLoading } = useAuth();
