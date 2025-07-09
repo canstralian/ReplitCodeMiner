@@ -4,11 +4,25 @@
   "type": "module",
   "license": "MIT",
   "scripts": {
+    "build": "tsc && vite build",
     "dev": "NODE_ENV=development tsx server/index.ts",
-    "build": "vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
+    "check": "tsc --noEmit",
     "start": "NODE_ENV=production node dist/index.js",
-    "check": "tsc",
-    "db:push": "drizzle-kit push"
+    "db:push": "drizzle-kit push",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:ui": "vitest --ui",
+    "lint": "eslint . --ext .ts,.tsx,.js,.jsx",
+    "lint:fix": "eslint . --ext .ts,.tsx,.js,.jsx --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "audit:security": "npm audit --audit-level=high",
+    "audit:fix": "npm audit fix",
+    "prepare": "husky install",
+    "pre-commit": "lint-staged"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -99,13 +113,27 @@
     "autoprefixer": "^10.4.20",
     "drizzle-kit": "^0.30.4",
     "esbuild": "^0.25.0",
+    "husky": "^9.0.0",
+    "lint-staged": "^15.0.0",
     "postcss": "^8.4.47",
+    "prettier": "^3.0.0",
     "tailwindcss": "^3.4.17",
     "tsx": "^4.19.1",
     "typescript": "5.6.3",
-    "vite": "^5.4.19"
+    "vite": "^5.4.19",
+    "vitest": "^1.0.0",
+     "eslint": "^8.0.0"
   },
   "optionalDependencies": {
     "bufferutil": "^4.0.8"
+  },
+   "lint-staged": {
+    "*.{js,jsx,ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md,css,scss}": [
+      "prettier --write"
+    ]
   }
 }

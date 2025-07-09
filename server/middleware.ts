@@ -1,4 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
+import LRU from 'lru-cache';
+import { logger } from './logger';
+import { z } from 'zod';
 
 interface PerformanceMetrics {
   endpoint: string;
@@ -148,33 +151,42 @@ export function getPerformanceStats() {
   return performanceMonitor.getStats();
 }
 
-// Rate limiting middleware
-const requestCounts = new Map<string, { count: number; resetTime: number }>();
+// Rate limiting using LRU cache
+const rateLimitStore = new LRU<string, number[]>({
+  max: 10000,
+  ttl: 60000 // 1 minute
+});
 
-export function rateLimitMiddleware(windowMs = 60000, maxRequests = 100) {
-  return (req: Request, res: Response, next: NextFunction): void => {
-    const clientId = req.ip || 'unknown';
-    const now = Date.now();
-
-    const clientData = requestCounts.get(clientId);
-
-    if (!clientData || now > clientData.resetTime) {
-      requestCounts.set(clientId, {
-        count: 1,
-        resetTime: now + windowMs,
-      });
-      return next();
+// Input validation middleware
+export function validateInput(schema: z.ZodSchema) {
+  return (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const result = schema.safeParse(req.body);
+      if (!result.success) {
+        logger.warn('Input validation failed', {
+          path: req.path,
+          errors: result.error.issues,
+          ip: req.ip
+        });
+        return res.status(400).json({
+          message: 'Invalid input',
+          errors: result.error.issues
+        });
+      }
+      req.body = result.data;
+      next();
+    } catch (error) {
+      logger.error('Validation middleware error:', error);
+      res.status(500).json({ message: 'Validation error' });
     }
-
-    if (clientData.count >= maxRequests) {
-      res.status(429).json({
-        error: 'Too many requests',
-        retryAfter: Math.ceil((clientData.resetTime - now) / 1000),
-      });
-      return;
-    }
-
-    clientData.count++;
-    next();
   };
+}
+
+// Security headers middleware
+export function securityHeaders(req: Request, res: Response, next: NextFunction) {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  next();
 }

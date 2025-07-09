@@ -13,8 +13,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Add performance monitoring
   app.use(performanceMiddleware);
 
+  // Add security headers
+  app.use(securityHeaders);
+
   // Add rate limiting
   app.use('/api/', rateLimitMiddleware(60000, 100)); // 100 requests per minute
+
+  // Health check endpoints (before auth)
+  const { healthRouter } = await import('./health');
+  app.use('/', healthRouter);
 
   // Auth middleware
   await setupAuth(app);
@@ -273,6 +280,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
       uptime: process.uptime(),
       memory: process.memoryUsage(),
       issues: health.issues
+    });
+  });
+
+  // Global error handler
+  app.use((error: Error, req: Request, res: Response, next: NextFunction) => {
+    logger.error('Unhandled error:', {
+      error: error.message,
+      stack: error.stack,
+      path: req.path,
+      method: req.method,
+      ip: req.ip
+    });
+
+    if (res.headersSent) {
+      return next(error);
+    }
+
+    res.status(500).json({
+      message: process.env.NODE_ENV === 'production' 
+        ? 'Internal server error' 
+        : error.message,
+      ...(process.env.NODE_ENV !== 'production' && { stack: error.stack })
+    });
+  });
+
+  // 404 handler
+  app.use('*', (req: Request, res: Response) => {
+    logger.warn('404 Not Found:', {
+      path: req.path,
+      method: req.method,
+      ip: req.ip
+    });
+    
+    res.status(404).json({
+      message: 'Resource not found',
+      path: req.path
     });
   });
 
