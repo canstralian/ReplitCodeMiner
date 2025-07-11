@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import LRU from 'lru-cache';
+import { LRUCache } from 'lru-cache';
 import { logger } from './logger';
 import { z } from 'zod';
 
@@ -152,10 +152,42 @@ export function getPerformanceStats() {
 }
 
 // Rate limiting using LRU cache
-const rateLimitStore = new LRU<string, number[]>({
+const rateLimitStore = new LRUCache<string, number[]>({
   max: 10000,
   ttl: 60000 // 1 minute
 });
+
+// Rate limiting middleware
+export function rateLimitMiddleware(windowMs: number, maxRequests: number) {
+  return (req: Request, res: Response, next: NextFunction) => {
+    const key = req.ip || 'unknown';
+    const now = Date.now();
+    const windowStart = now - windowMs;
+    
+    let requests = rateLimitStore.get(key) || [];
+    
+    // Filter out old requests
+    requests = requests.filter(timestamp => timestamp > windowStart);
+    
+    if (requests.length >= maxRequests) {
+      logger.warn('Rate limit exceeded', {
+        ip: req.ip,
+        path: req.path,
+        requestCount: requests.length
+      });
+      return res.status(429).json({
+        message: 'Too many requests. Please try again later.',
+        retryAfter: Math.ceil(windowMs / 1000)
+      });
+    }
+    
+    // Add current request
+    requests.push(now);
+    rateLimitStore.set(key, requests);
+    
+    next();
+  };
+}
 
 // Input validation middleware
 export function validateInput(schema: z.ZodSchema) {

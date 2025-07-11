@@ -1,11 +1,12 @@
-import type { Express } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import { ReplitApiService } from "./replitApi";
 import { insertProjectSchema } from "@shared/schema";
-import { performanceMiddleware, rateLimitMiddleware, getPerformanceStats } from "./middleware";
+import { performanceMiddleware, rateLimitMiddleware, getPerformanceStats, securityHeaders } from "./middleware";
 import { taskadeService } from "./taskadeService";
+import { logger } from "./logger";
 import { z } from "zod";
 import AnalysisService from './analysisService';
 
@@ -305,8 +306,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
-  // 404 handler
-  app.use('*', (req: Request, res: Response) => {
+  // 404 handler for API routes only
+  app.use('/api/*', (req: Request, res: Response) => {
     logger.warn('404 Not Found:', {
       path: req.path,
       method: req.method,
