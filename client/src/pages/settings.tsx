@@ -56,26 +56,26 @@ export default function Settings() {
     if (userSettings) {
       setSettings({
         profile: {
-          email: userSettings.profile?.email || '',
-          firstName: userSettings.profile?.firstName || '',
-          lastName: userSettings.profile?.lastName || '',
+          email: (userSettings as any)?.profile?.email || '',
+          firstName: (userSettings as any)?.profile?.firstName || '',
+          lastName: (userSettings as any)?.profile?.lastName || '',
         },
         notifications: {
-          emailNotifications: userSettings.notifications?.emailNotifications ?? true,
-          taskadeIntegration: userSettings.notifications?.taskadeIntegration ?? true,
-          analysisComplete: userSettings.notifications?.analysisComplete ?? true,
-          duplicatesFound: userSettings.notifications?.duplicatesFound ?? true,
+          emailNotifications: (userSettings as any)?.notifications?.emailNotifications ?? true,
+          taskadeIntegration: (userSettings as any)?.notifications?.taskadeIntegration ?? true,
+          analysisComplete: (userSettings as any)?.notifications?.analysisComplete ?? true,
+          duplicatesFound: (userSettings as any)?.notifications?.duplicatesFound ?? true,
         },
         analysis: {
-          autoAnalyze: userSettings.analysis?.autoAnalyze ?? false,
-          duplicateThreshold: [userSettings.analysis?.duplicateThreshold ?? 0.8],
-          excludePatterns: userSettings.analysis?.excludePatterns ?? ['test/', 'node_modules/'],
-          includeLanguages: userSettings.analysis?.includeLanguages ?? ['javascript', 'python', 'typescript'],
+          autoAnalyze: (userSettings as any)?.analysis?.autoAnalyze ?? false,
+          duplicateThreshold: [(userSettings as any)?.analysis?.duplicateThreshold ?? 0.8],
+          excludePatterns: (userSettings as any)?.analysis?.excludePatterns ?? ['test/', 'node_modules/'],
+          includeLanguages: (userSettings as any)?.analysis?.includeLanguages ?? ['javascript', 'python', 'typescript'],
         },
         privacy: {
-          profileVisibility: userSettings.privacy?.profileVisibility ?? 'private',
-          shareAnalytics: userSettings.privacy?.shareAnalytics ?? false,
-          dataRetention: [userSettings.privacy?.dataRetention ?? 30],
+          profileVisibility: (userSettings as any)?.privacy?.profileVisibility ?? 'private',
+          shareAnalytics: (userSettings as any)?.privacy?.shareAnalytics ?? false,
+          dataRetention: [(userSettings as any)?.privacy?.dataRetention ?? 30],
         }
       });
     }
@@ -319,9 +319,9 @@ export default function Settings() {
                         if (e.key === 'Enter') {
                           setSettings(prev => ({
                             ...prev,
-                            analysis: { ...prev.analysis, excludePatterns: [...prev.analysis.excludePatterns, e.target.value] }
+                            analysis: { ...prev.analysis, excludePatterns: [...prev.analysis.excludePatterns, (e.target as HTMLInputElement).value] }
                           }));
-                          e.target.value = '';
+                          (e.target as HTMLInputElement).value = '';
                         }
                       }}
                     />
@@ -343,9 +343,9 @@ export default function Settings() {
                         if (e.key === 'Enter') {
                           setSettings(prev => ({
                             ...prev,
-                            analysis: { ...prev.analysis, includeLanguages: [...prev.analysis.includeLanguages, e.target.value] }
+                            analysis: { ...prev.analysis, includeLanguages: [...prev.analysis.includeLanguages, (e.target as HTMLInputElement).value] }
                           }));
-                          e.target.value = '';
+                          (e.target as HTMLInputElement).value = '';
                         }
                       }}
                     />

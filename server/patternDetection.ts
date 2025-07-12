@@ -411,7 +411,7 @@ class PatternDetector {
     if (set1.size === 0 && set2.size === 0) return 1.0;
     if (set1.size === 0 || set2.size === 0) return 0.0;
     
-    const intersection = new Set([...set1].filter(x => set2.has(x)));
+    const intersection = new Set(Array.from(set1).filter(x => set2.has(x)));
     const unionSize = set1.size + set2.size - intersection.size;
     
     return unionSize === 0 ? 0 : intersection.size / unionSize;
@@ -434,7 +434,7 @@ class PatternDetector {
       const commonImports = imports1.filter(i => imports2.includes(i)).slice(0, maxPatterns);
       patterns.push(...commonImports);
 
-      return [...new Set(patterns)].slice(0, maxPatterns);
+      return Array.from(new Set(patterns)).slice(0, maxPatterns);
     } catch (error) {
       console.error('Error finding common patterns:', error);
       return [];

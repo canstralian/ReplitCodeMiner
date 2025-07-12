@@ -1,26 +1,20 @@
 import { storage } from './storage';
 import PatternDetector from './patternDetection';
 import { LRUCache } from 'lru-cache';
-
-interface AnalysisResult {
-  totalFiles: number;
-  duplicatesFound: number;
-  similarityScores: number[];
-  patternTypes: Record<string, number>;
-  processingTime: number;
-}
-
-interface CachedAnalysis {
-  result: AnalysisResult;
-  timestamp: number;
-  projectHashes: string[];
-}
+import { logger } from './logger';
+// import type { CodePattern } from './patternDetection';
 
 interface AnalysisResult {
   duplicateGroups: DuplicateGroup[];
   totalPatterns: number;
   processingTime: number;
   metrics: AnalysisMetrics;
+}
+
+interface CachedAnalysis {
+  result: AnalysisResult;
+  timestamp: number;
+  projectHashes: string[];
 }
 
 interface AnalysisMetrics {
@@ -32,7 +26,7 @@ interface AnalysisMetrics {
 
 interface DuplicateGroup {
   id: string;
-  patterns: CodePattern[];
+  patterns: any[];
   similarityScore: number;
   type: string;
 }
@@ -132,6 +126,9 @@ export class AnalysisService {
             ...file,
             pattern
           });
+          
+          // Count pattern types
+          patternTypes[pattern.type] = (patternTypes[pattern.type] || 0) + 1;
         }
       } catch (error) {
         logger.error('Error processing file during analysis:', {
@@ -142,17 +139,13 @@ export class AnalysisService {
         // Continue processing other files
         continue;
       }
-
-        // Count pattern types
-        patternTypes[pattern.type] = (patternTypes[pattern.type] || 0) + 1;
-      }
     }
 
     // Find duplicates in hash groups
     const similarityScores: number[] = [];
     let duplicatesFound = 0;
 
-    for (const [hash, group] of hashGroups) {
+    for (const [hash, group] of Array.from(hashGroups)) {
       if (group.length > 1) {
         duplicatesFound += group.length - 1;
 
@@ -174,11 +167,15 @@ export class AnalysisService {
     }
 
     return {
-      totalFiles: allFiles.length,
-      duplicatesFound,
-      similarityScores,
-      patternTypes,
-      processingTime: 0 // Will be set by caller
+      duplicateGroups: [],
+      totalPatterns: Object.keys(patternTypes).length,
+      processingTime: 0, // Will be set by caller
+      metrics: {
+        filesAnalyzed: allFiles.length,
+        patternsFound: Object.keys(patternTypes).length,
+        duplicatesDetected: duplicatesFound,
+        languages: patternTypes
+      }
     };
   }
 

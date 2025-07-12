@@ -114,7 +114,6 @@ class StorageService {
 
   private async processBatchSync(userId: string, batch: ReplitProject[]): Promise<void> {
     const projectValues = batch.map(project => ({
-      id: project.id,
       userId,
       title: project.title || 'Untitled Project',
       description: project.description || '',
@@ -130,7 +129,7 @@ class StorageService {
         await tx.insert(projects)
           .values(projectData)
           .onConflictDoUpdate({
-            target: projects.id,
+            target: projects.url,
             set: {
               title: projectData.title,
               description: projectData.description,
@@ -163,16 +162,26 @@ class StorageService {
     const startTime = Date.now();
     
     try {
-      let query = db.select().from(projects).where(eq(projects.userId, userId));
+      // Build the query with proper sorting and pagination
+      const baseQuery = db.select().from(projects).where(eq(projects.userId, userId));
       
-      // Add sorting
-      const sortColumn = projects[sortBy as keyof typeof projects];
-      query = sortOrder === 'asc' ? query.orderBy(asc(sortColumn)) : query.orderBy(desc(sortColumn));
-      
-      // Add pagination
-      query = query.limit(limit).offset(offset);
-      
-      const result = await query;
+      let result;
+      if (sortBy === 'title') {
+        result = sortOrder === 'asc' 
+          ? await baseQuery.orderBy(asc(projects.title)).limit(limit).offset(offset)
+          : await baseQuery.orderBy(desc(projects.title)).limit(limit).offset(offset);
+      } else if (sortBy === 'lastUpdated') {
+        result = sortOrder === 'asc' 
+          ? await baseQuery.orderBy(asc(projects.lastUpdated)).limit(limit).offset(offset)
+          : await baseQuery.orderBy(desc(projects.lastUpdated)).limit(limit).offset(offset);
+      } else if (sortBy === 'fileCount') {
+        result = sortOrder === 'asc' 
+          ? await baseQuery.orderBy(asc(projects.fileCount)).limit(limit).offset(offset)
+          : await baseQuery.orderBy(desc(projects.fileCount)).limit(limit).offset(offset);
+      } else {
+        // Default sorting
+        result = await baseQuery.orderBy(desc(projects.lastUpdated)).limit(limit).offset(offset);
+      }
       
       this.updateMetrics(startTime);
       this.metrics.cacheMisses++;
@@ -252,7 +261,7 @@ class StorageService {
                 .filter(pattern => pattern.filePath && pattern.patternHash) // Filter invalid patterns
                 .map(pattern => ({
                   userId,
-                  projectId: result.projectId,
+                  projectId: parseInt(result.projectId.toString(), 10),
                   filePath: pattern.filePath,
                   patternHash: pattern.patternHash,
                   codeSnippet: pattern.codeSnippet.substring(0, 5000), // Limit snippet size
@@ -395,27 +404,29 @@ class StorageService {
     const startTime = Date.now();
     
     try {
-      let dbQuery = db.select().from(codePatterns).where(eq(codePatterns.userId, userId));
+      const conditions = [eq(codePatterns.userId, userId)];
 
       // Add search conditions
       if (query && query.trim()) {
-        dbQuery = dbQuery.where(
+        conditions.push(
           sql`${codePatterns.codeSnippet} ILIKE ${`%${query.trim()}%`}`
         );
       }
 
       if (language) {
-        dbQuery = dbQuery.where(
+        conditions.push(
           sql`${codePatterns.filePath} ILIKE ${`%.${language}`}`
         );
       }
       
       if (patternType) {
-        dbQuery = dbQuery.where(eq(codePatterns.patternType, patternType));
+        conditions.push(eq(codePatterns.patternType, patternType));
       }
 
       // Add ordering and pagination
-      const result = await dbQuery
+      const result = await db.select()
+        .from(codePatterns)
+        .where(and(...conditions))
         .orderBy(desc(codePatterns.createdAt))
         .limit(limit)
         .offset(offset);

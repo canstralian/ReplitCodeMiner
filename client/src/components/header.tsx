@@ -17,6 +17,9 @@ export default function Header() {
     window.location.href = "/api/logout";
   };
 
+  // Type guard for user properties
+  const safeUser = user as any;
+
   return (
     <header className="bg-navy-dark border-b border-gray-700 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -41,13 +44,13 @@ export default function Header() {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="flex items-center space-x-2 hover:bg-editor-dark">
                   <Avatar className="h-8 w-8">
-                    <AvatarImage src={user?.profileImageUrl} alt={`${user?.firstName} ${user?.lastName}`} />
+                    <AvatarImage src={safeUser?.profileImageUrl || ''} alt={`${safeUser?.firstName || ''} ${safeUser?.lastName || ''}`} />
                     <AvatarFallback className="bg-replit-orange text-white">
-                      {user?.firstName?.[0]}{user?.lastName?.[0]}
+                      {safeUser?.firstName?.[0] || 'U'}{safeUser?.lastName?.[0] || 'U'}
                     </AvatarFallback>
                   </Avatar>
                   <span className="text-sm hidden sm:block text-white">
-                    {user?.firstName} {user?.lastName}
+                    {safeUser?.firstName || ''} {safeUser?.lastName || ''}
                   </span>
                 </Button>
               </DropdownMenuTrigger>
