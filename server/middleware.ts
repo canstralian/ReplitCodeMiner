@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { LRUCache } from 'lru-cache';
+import LRU from 'lru-cache';
 import { logger } from './logger';
 import { z } from 'zod';
 
@@ -152,38 +152,56 @@ export function getPerformanceStats() {
 }
 
 // Rate limiting using LRU cache
-const rateLimitStore = new LRUCache<string, number[]>({
+const rateLimitStore = new LRU<string, number[]>({
   max: 10000,
   ttl: 60000 // 1 minute
 });
 
-// Rate limiting middleware
-export function rateLimitMiddleware(windowMs: number, maxRequests: number) {
+/**
+ * Rate limiting middleware with configurable window and request limits
+ * @param windowMs - Time window in milliseconds
+ * @param maxRequests - Maximum requests allowed in the window
+ * @returns Express middleware function
+ */
+export function rateLimitMiddleware(windowMs: number = 60000, maxRequests: number = 100) {
   return (req: Request, res: Response, next: NextFunction) => {
-    const key = req.ip || 'unknown';
+    const key = `${req.ip}:${req.path}`;
     const now = Date.now();
     const windowStart = now - windowMs;
     
+    // Get existing requests for this key
     let requests = rateLimitStore.get(key) || [];
     
-    // Filter out old requests
+    // Filter out old requests outside the window
     requests = requests.filter(timestamp => timestamp > windowStart);
     
+    // Check if limit exceeded
     if (requests.length >= maxRequests) {
       logger.warn('Rate limit exceeded', {
         ip: req.ip,
         path: req.path,
-        requestCount: requests.length
+        requestCount: requests.length,
+        limit: maxRequests
       });
+      
+      res.setHeader('X-RateLimit-Limit', maxRequests.toString());
+      res.setHeader('X-RateLimit-Remaining', '0');
+      res.setHeader('X-RateLimit-Reset', Math.ceil((requests[0] + windowMs) / 1000).toString());
+      
       return res.status(429).json({
-        message: 'Too many requests. Please try again later.',
-        retryAfter: Math.ceil(windowMs / 1000)
+        message: 'Too many requests',
+        retryAfter: Math.ceil((requests[0] + windowMs - now) / 1000)
       });
     }
     
-    // Add current request
+    // Add current request timestamp
     requests.push(now);
     rateLimitStore.set(key, requests);
+    
+    // Set rate limit headers
+    res.setHeader('X-RateLimit-Limit', maxRequests.toString());
+    res.setHeader('X-RateLimit-Remaining', (maxRequests - requests.length).toString());
+    res.setHeader('X-RateLimit-Reset', Math.ceil((now + windowMs) / 1000).toString());
     
     next();
   };

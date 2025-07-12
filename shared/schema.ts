@@ -60,11 +60,59 @@ export const sessions = pgTable("sessions", {
   expire: timestamp("expire").notNull(),
 });
 
-// Zod schemas
-export const insertUserSchema = createInsertSchema(users);
+// Enhanced Zod schemas with validation
+export const insertUserSchema = createInsertSchema(users, {
+  email: z.string().email("Invalid email format"),
+  firstName: z.string().min(1, "First name is required").max(50),
+  lastName: z.string().min(1, "Last name is required").max(50),
+  profileImageUrl: z.string().url().optional()
+});
+
 export const selectUserSchema = createSelectSchema(users);
-export const insertProjectSchema = createInsertSchema(projects);
+
+export const insertProjectSchema = createInsertSchema(projects, {
+  title: z.string().min(1, "Project title is required").max(200),
+  description: z.string().max(1000).optional(),
+  language: z.string().max(50).optional(),
+  url: z.string().url("Invalid project URL"),
+  fileCount: z.number().int().min(0).optional()
+});
+
 export const selectProjectSchema = createSelectSchema(projects);
+
+export const insertCodePatternSchema = createInsertSchema(codePatterns, {
+  filePath: z.string().min(1, "File path is required"),
+  patternHash: z.string().min(1, "Pattern hash is required"),
+  codeSnippet: z.string().min(1, "Code snippet is required"),
+  patternType: z.enum(['function', 'class', 'import', 'component', 'hook', 'api_call']),
+  lineStart: z.number().int().min(1),
+  lineEnd: z.number().int().min(1)
+});
+
+export const insertDuplicateGroupSchema = createInsertSchema(duplicateGroups, {
+  patternHash: z.string().min(1, "Pattern hash is required"),
+  similarityScore: z.string().regex(/^\d+\.\d{4}$/, "Invalid similarity score format"),
+  patternType: z.enum(['function', 'class', 'import', 'component', 'hook', 'api_call'])
+});
+
+// API request/response schemas
+export const analyzeProjectsRequestSchema = z.object({
+  projectIds: z.array(z.string().uuid("Invalid project ID format")).min(1).max(50)
+});
+
+export const searchRequestSchema = z.object({
+  query: z.string().min(1).max(500),
+  language: z.string().max(50).optional(),
+  patternType: z.enum(['function', 'class', 'import', 'component', 'hook', 'api_call']).optional()
+});
+
+export const userSettingsSchema = z.object({
+  theme: z.enum(['light', 'dark']).default('dark'),
+  analysisThreshold: z.number().min(0.1).max(1.0).default(0.8),
+  autoRefresh: z.boolean().default(false),
+  notifications: z.boolean().default(true),
+  maxFileSize: z.number().int().min(1024).max(10485760).default(1048576) // 1MB default
+});
 
 export type User = typeof users.$inferSelect;
 export type UpsertUser = typeof users.$inferInsert;
