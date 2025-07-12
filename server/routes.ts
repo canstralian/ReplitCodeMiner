@@ -354,20 +354,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
-  // 404 handler
-  app.use('*', (req: Request, res: Response) => {
-    logger.warn('404 Not Found:', {
-      path: req.path,
-      method: req.method,
-      ip: req.ip
-    });
-    
-    res.status(404).json({
-      message: 'Resource not found',
-      path: req.path
-    });
-  });
-
   const httpServer = createServer(app);
   return httpServer;
 }

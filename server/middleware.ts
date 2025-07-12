@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import LRU from 'lru-cache';
+import { LRUCache } from 'lru-cache';
 import { logger } from './logger';
 import { z } from 'zod';
 
@@ -152,7 +152,7 @@ export function getPerformanceStats() {
 }
 
 // Rate limiting using LRU cache
-const rateLimitStore = new LRU<string, number[]>({
+const rateLimitStore = new LRUCache<string, number[]>({
   max: 10000,
   ttl: 60000 // 1 minute
 });

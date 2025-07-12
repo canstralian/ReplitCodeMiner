@@ -91,6 +91,20 @@ app.use((req, res, next) => {
     serveStatic(app);
   }
 
+  // 404 handler for API routes only (after Vite setup)
+  app.use('/api/*', (req, res) => {
+    logger.warn('404 Not Found:', {
+      path: req.path,
+      method: req.method,
+      ip: req.ip
+    });
+    
+    res.status(404).json({
+      message: 'Resource not found',
+      path: req.path
+    });
+  });
+
   // ALWAYS serve the app on port 5000
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
