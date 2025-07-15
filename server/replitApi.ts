@@ -18,7 +18,7 @@ export interface CodeFile {
   size: number;
 }
 
-export interface CodePattern {
+export interface ReplitCodePattern {
   filePath: string;
   patternHash: string;
   codeSnippet: string;
@@ -32,12 +32,12 @@ export interface DuplicateMatch {
   patternHash: string;
   similarityScore: number;
   patternType: string;
-  matches: CodePattern[];
+  matches: ReplitCodePattern[];
 }
 
-export interface AnalysisResult {
+export interface ReplitAnalysisResult {
   projectId: string;
-  patterns: CodePattern[];
+  patterns: ReplitCodePattern[];
   duplicates: DuplicateMatch[];
   metrics: {
     filesAnalyzed: number;
@@ -223,9 +223,9 @@ export class ReplitApiService {
     }
   }
 
-  async analyzeProjects(accessToken: string, projectIds: string[]): Promise<AnalysisResult[]> {
+  async analyzeProjects(accessToken: string, projectIds: string[]): Promise<ReplitAnalysisResult[]> {
     const startTime = Date.now();
-    const results: AnalysisResult[] = [];
+    const results: ReplitAnalysisResult[] = [];
     
     // Process projects in batches to avoid overwhelming the API
     const batches = this.chunkArray(projectIds, this.MAX_CONCURRENT_REQUESTS);
@@ -286,8 +286,8 @@ export class ReplitApiService {
     return chunks;
   }
 
-  private extractCodePatterns(files: CodeFile[]): CodePattern[] {
-    const patterns: CodePattern[] = [];
+  private extractCodePatterns(files: CodeFile[]): ReplitCodePattern[] {
+    const patterns: ReplitCodePattern[] = [];
 
     for (const file of files) {
       if (file.content.length > 50000) continue; // Skip very large files
@@ -320,8 +320,8 @@ export class ReplitApiService {
     return patterns;
   }
 
-  private extractFunctionPatterns(file: CodeFile, lines: string[]): CodePattern[] {
-    const patterns: CodePattern[] = [];
+  private extractFunctionPatterns(file: CodeFile, lines: string[]): ReplitCodePattern[] {
+    const patterns: ReplitCodePattern[] = [];
     const functionRegexes = {
       javascript: /(?:function\s+(\w+)|const\s+(\w+)\s*=|(\w+)\s*:\s*function|(\w+)\s*=\s*\(.*?\)\s*=>)/g,
       python: /def\s+(\w+)\s*\(/g,
@@ -357,8 +357,8 @@ export class ReplitApiService {
     return patterns;
   }
 
-  private extractClassPatterns(file: CodeFile, lines: string[]): CodePattern[] {
-    const patterns: CodePattern[] = [];
+  private extractClassPatterns(file: CodeFile, lines: string[]): ReplitCodePattern[] {
+    const patterns: ReplitCodePattern[] = [];
     const classRegexes = {
       javascript: /class\s+(\w+)/g,
       typescript: /class\s+(\w+)/g,
@@ -389,8 +389,8 @@ export class ReplitApiService {
     return patterns;
   }
 
-  private extractImportPatterns(file: CodeFile, lines: string[]): CodePattern[] {
-    const patterns: CodePattern[] = [];
+  private extractImportPatterns(file: CodeFile, lines: string[]): ReplitCodePattern[] {
+    const patterns: ReplitCodePattern[] = [];
     const importRegexes = {
       javascript: /^import\s+.*from\s+['"]([^'"]+)['"];?$/,
       typescript: /^import\s+.*from\s+['"]([^'"]+)['"];?$/,
@@ -419,8 +419,8 @@ export class ReplitApiService {
     return patterns;
   }
 
-  private extractComponentPatterns(file: CodeFile, lines: string[]): CodePattern[] {
-    const patterns: CodePattern[] = [];
+  private extractComponentPatterns(file: CodeFile, lines: string[]): ReplitCodePattern[] {
+    const patterns: ReplitCodePattern[] = [];
     const componentRegex = /(?:const\s+(\w+)\s*=.*=>|function\s+(\w+)\s*\(.*\)\s*{)/;
 
     lines.forEach((line, index) => {
@@ -494,9 +494,9 @@ export class ReplitApiService {
     return /return\s*\(|\<[A-Z]|jsx|React|useState|useEffect/.test(line);
   }
 
-  private findDuplicates(patterns: CodePattern[]): DuplicateMatch[] {
+  private findDuplicates(patterns: ReplitCodePattern[]): DuplicateMatch[] {
     const duplicates: DuplicateMatch[] = [];
-    const hashGroups: Record<string, CodePattern[]> = {};
+    const hashGroups: Record<string, ReplitCodePattern[]> = {};
 
     // Group patterns by hash
     patterns.forEach(pattern => {

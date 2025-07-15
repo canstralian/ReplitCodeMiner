@@ -2,7 +2,7 @@
 import { createHash } from 'crypto';
 import { diffLines } from 'diff';
 
-interface CodePattern {
+export interface CodePattern {
   type: string;
   name: string;
   signature: string;
@@ -14,7 +14,7 @@ interface CodePattern {
   endLine?: number;
 }
 
-interface SimilarityResult {
+export interface SimilarityResult {
   score: number;
   patterns: string[];
   type: 'structural' | 'semantic' | 'syntactic';

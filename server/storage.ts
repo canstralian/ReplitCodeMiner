@@ -2,7 +2,7 @@
 import { users, projects, codePatterns, duplicateGroups, patternGroups, type User, type UpsertUser, type Project, type InsertProject, type CodePattern, type InsertCodePattern, type DuplicateGroup, type InsertDuplicateGroup } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, count, inArray, desc, asc } from "drizzle-orm";
-import type { ReplitProject, AnalysisResult } from "./replitApi";
+import type { ReplitProject, ReplitAnalysisResult, ReplitCodePattern, DuplicateMatch } from "./replitApi";
 import { sql } from "drizzle-orm";
 import { logger } from "./logger";
 
@@ -240,7 +240,7 @@ class StorageService {
     }
   }
 
-  async storeAnalysisResults(userId: string, results: AnalysisResult[]): Promise<void> {
+  async storeAnalysisResults(userId: string, results: ReplitAnalysisResult[]): Promise<void> {
     if (!results || results.length === 0) {
       logger.info(`No analysis results to store for user ${userId}`);
       return;
@@ -258,8 +258,8 @@ class StorageService {
             
             for (const batch of patternBatches) {
               const patternValues = batch
-                .filter(pattern => pattern.filePath && pattern.patternHash) // Filter invalid patterns
-                .map(pattern => ({
+                .filter((pattern: ReplitCodePattern) => pattern.filePath && pattern.patternHash) // Filter invalid patterns
+                .map((pattern: ReplitCodePattern) => ({
                   userId,
                   projectId: parseInt(result.projectId.toString(), 10),
                   filePath: pattern.filePath,
@@ -284,8 +284,8 @@ class StorageService {
             
             for (const batch of duplicateBatches) {
               const duplicateValues = batch
-                .filter(duplicate => duplicate.patternHash && duplicate.similarityScore) // Filter invalid duplicates
-                .map(duplicate => ({
+                .filter((duplicate: DuplicateMatch) => duplicate.patternHash && duplicate.similarityScore) // Filter invalid duplicates
+                .map((duplicate: DuplicateMatch) => ({
                   userId,
                   patternHash: duplicate.patternHash,
                   similarityScore: Math.min(duplicate.similarityScore, 1).toString(), // Ensure score <= 1

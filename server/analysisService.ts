@@ -1,32 +1,31 @@
 import { storage } from './storage';
-import PatternDetector from './patternDetection';
+import PatternDetector, { type CodePattern } from './patternDetection';
 import { LRUCache } from 'lru-cache';
 import { logger } from './logger';
-// import type { CodePattern } from './patternDetection';
 
-interface AnalysisResult {
+export interface AnalysisResult {
   duplicateGroups: DuplicateGroup[];
   totalPatterns: number;
   processingTime: number;
   metrics: AnalysisMetrics;
 }
 
-interface CachedAnalysis {
+export interface CachedAnalysis {
   result: AnalysisResult;
   timestamp: number;
   projectHashes: string[];
 }
 
-interface AnalysisMetrics {
+export interface AnalysisMetrics {
   filesAnalyzed: number;
   patternsFound: number;
   duplicatesDetected: number;
   languages: Record<string, number>;
 }
 
-interface DuplicateGroup {
+export interface DuplicateGroup {
   id: string;
-  patterns: any[];
+  patterns: CodePattern[];
   similarityScore: number;
   type: string;
 }
