@@ -33,7 +33,7 @@ export interface DuplicateGroup {
 export class AnalysisService {
   private storage: typeof storage;
   private analysisCache: LRUCache<string, CachedAnalysis>;
-  private patternCache: LRUCache<string, any>;
+  private patternCache: LRUCache<string, CodePattern[]>;
 
   constructor() {
     this.storage = storage;
@@ -55,49 +55,61 @@ export class AnalysisService {
   async analyzeProjects(userId: string, projects: any[]): Promise<AnalysisResult> {
     const startTime = Date.now();
 
-    // Generate cache key based on project content
-    const cacheKey = this.generateCacheKey(userId, projects);
-    const cached = this.analysisCache.get(cacheKey);
+    try {
+      // Generate cache key based on project content
+      const cacheKey = this.generateCacheKey(userId, projects);
+      const cached = this.analysisCache.get(cacheKey);
 
-    if (cached && this.isCacheValid(cached, projects)) {
-      return cached.result;
+      if (cached && this.isCacheValid(cached, projects)) {
+        return cached.result;
+      }
+
+      // Perform analysis
+      const result = await this.performAnalysis(userId, projects);
+
+      // Cache result
+      this.analysisCache.set(cacheKey, {
+        result,
+        timestamp: Date.now(),
+        projectHashes: projects.map(p => PatternDetector.generatePatternHash(JSON.stringify(p)))
+      });
+
+      result.processingTime = Date.now() - startTime;
+      return result;
+    } catch (error) {
+      logger.error('Error in analyzeProjects:', {
+        userId,
+        projectCount: projects.length,
+        error: error instanceof Error ? error.message : String(error)
+      });
+      throw error;
     }
-
-    // Perform analysis
-    const result = await this.performAnalysis(userId, projects);
-
-    // Cache result
-    this.analysisCache.set(cacheKey, {
-      result,
-      timestamp: Date.now(),
-      projectHashes: projects.map(p => PatternDetector.generatePatternHash(JSON.stringify(p)))
-    });
-
-    result.processingTime = Date.now() - startTime;
-    return result;
   }
 
   private async performAnalysis(userId: string, projects: any[]): Promise<AnalysisResult> {
     const allFiles: Array<{ projectId: string; filePath: string; content: string }> = [];
-    const duplicateGroups: Array<Array<any>> = [];
+    const duplicateGroups: DuplicateGroup[] = [];
     const patternTypes: Record<string, number> = {};
+    const languageStats: Record<string, number> = {};
 
     // Extract all files from projects
     for (const project of projects) {
-      if (project.files) {
+      if (project.files && Array.isArray(project.files)) {
         for (const file of project.files) {
-          allFiles.push({
-            projectId: project.id,
-            filePath: file.path,
-            content: file.content || ''
-          });
+          if (file.path && file.content) {
+            allFiles.push({
+              projectId: project.id,
+              filePath: file.path,
+              content: file.content
+            });
+          }
         }
       }
     }
 
     // Analyze patterns and find duplicates
-    const filePatterns = new Map<string, any>();
-    const hashGroups = new Map<string, any[]>();
+    const filePatterns = new Map<string, CodePattern[]>();
+    const hashGroups = new Map<string, Array<{ file: any; pattern: CodePattern }>>();
 
     for (const file of allFiles) {
       try {
@@ -105,6 +117,10 @@ export class AnalysisService {
         if (!file.content || file.content.length > 1024 * 1024) {
           continue;
         }
+
+        // Get file language from extension
+        const language = this.getLanguageFromPath(file.filePath);
+        languageStats[language] = (languageStats[language] || 0) + 1;
 
         const cacheKey = `patterns_${PatternDetector.generatePatternHash(file.content)}`;
         let patterns = this.patternCache.get(cacheKey);
@@ -122,7 +138,7 @@ export class AnalysisService {
             hashGroups.set(pattern.hash, []);
           }
           hashGroups.get(pattern.hash)!.push({
-            ...file,
+            file,
             pattern
           });
           
@@ -141,53 +157,119 @@ export class AnalysisService {
     }
 
     // Find duplicates in hash groups
-    const similarityScores: number[] = [];
     let duplicatesFound = 0;
+    let groupIdCounter = 0;
 
     for (const [hash, group] of Array.from(hashGroups)) {
       if (group.length > 1) {
-        duplicatesFound += group.length - 1;
+        // Calculate average similarity score for the group
+        let totalSimilarity = 0;
+        let comparisons = 0;
 
-        // Calculate detailed similarity for each pair
         for (let i = 0; i < group.length; i++) {
           for (let j = i + 1; j < group.length; j++) {
             const similarity = PatternDetector.calculateSimilarity(
-              group[i].content,
-              group[j].content
+              group[i].file.content,
+              group[j].file.content
             );
-            similarityScores.push(similarity.score);
-
-            // Store in database for future reference
-            // TODO: Implement proper duplicate storage
-            console.log(`Duplicate found: ${group[i].filePath} matches ${group[j].filePath} with score ${similarity.score}`);
+            totalSimilarity += similarity.score;
+            comparisons++;
           }
+        }
+
+        const avgSimilarity = comparisons > 0 ? totalSimilarity / comparisons : 0;
+        
+        // Only include groups with significant similarity
+        if (avgSimilarity > 0.7) {
+          duplicateGroups.push({
+            id: `group_${groupIdCounter++}`,
+            patterns: group.map(g => g.pattern),
+            similarityScore: avgSimilarity,
+            type: group[0].pattern.type
+          });
+          
+          duplicatesFound += group.length - 1;
         }
       }
     }
 
     return {
-      duplicateGroups: [],
-      totalPatterns: Object.keys(patternTypes).length,
+      duplicateGroups,
+      totalPatterns: Object.values(patternTypes).reduce((sum, count) => sum + count, 0),
       processingTime: 0, // Will be set by caller
       metrics: {
         filesAnalyzed: allFiles.length,
-        patternsFound: Object.keys(patternTypes).length,
+        patternsFound: Object.values(patternTypes).reduce((sum, count) => sum + count, 0),
         duplicatesDetected: duplicatesFound,
-        languages: patternTypes
+        languages: languageStats
       }
     };
   }
 
   private generateCacheKey(userId: string, projects: any[]): string {
-    const projectsHash = PatternDetector.generatePatternHash(
-      JSON.stringify(projects.map(p => ({ id: p.id, updated: p.updated })))
-    );
-    return `analysis_${userId}_${projectsHash}`;
+    try {
+      const projectsHash = PatternDetector.generatePatternHash(
+        JSON.stringify(projects.map(p => ({ id: p.id, updated: p.updated || p.lastUpdated })))
+      );
+      return `analysis_${userId}_${projectsHash}`;
+    } catch (error) {
+      logger.error('Error generating cache key:', error);
+      return `analysis_${userId}_${Date.now()}`;
+    }
   }
 
   private isCacheValid(cached: CachedAnalysis, projects: any[]): boolean {
-    const currentHashes = projects.map(p => PatternDetector.generatePatternHash(JSON.stringify(p)));
-    return JSON.stringify(cached.projectHashes) === JSON.stringify(currentHashes);
+    try {
+      const currentHashes = projects.map(p => PatternDetector.generatePatternHash(JSON.stringify(p)));
+      return JSON.stringify(cached.projectHashes) === JSON.stringify(currentHashes);
+    } catch (error) {
+      logger.error('Error validating cache:', error);
+      return false;
+    }
+  }
+
+  private getLanguageFromPath(filePath: string): string {
+    const ext = filePath.split('.').pop()?.toLowerCase();
+    switch (ext) {
+      case 'js': return 'javascript';
+      case 'jsx': return 'javascript';
+      case 'ts': return 'typescript';
+      case 'tsx': return 'typescript';
+      case 'py': return 'python';
+      case 'java': return 'java';
+      case 'cpp': case 'cc': case 'cxx': return 'cpp';
+      case 'c': return 'c';
+      case 'cs': return 'csharp';
+      case 'go': return 'go';
+      case 'rs': return 'rust';
+      case 'php': return 'php';
+      case 'rb': return 'ruby';
+      case 'html': return 'html';
+      case 'css': return 'css';
+      case 'json': return 'json';
+      case 'md': return 'markdown';
+      default: return 'unknown';
+    }
+  }
+
+  // Clear all caches
+  public clearCaches(): void {
+    this.analysisCache.clear();
+    this.patternCache.clear();
+  }
+
+  // Get cache statistics
+  public getCacheStats() {
+    return {
+      analysisCache: {
+        size: this.analysisCache.size,
+        calculatedSize: this.analysisCache.calculatedSize
+      },
+      patternCache: {
+        size: this.patternCache.size,
+        calculatedSize: this.patternCache.calculatedSize
+      }
+    };
   }
 }
 
