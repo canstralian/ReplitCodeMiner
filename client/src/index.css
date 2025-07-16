@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -22,14 +23,30 @@
   --destructive: hsl(0, 84.2%, 60.2%);
   --destructive-foreground: hsl(60, 9.1%, 97.8%);
   --ring: hsl(20, 14.3%, 4.1%);
-  --radius: 0.5rem;
+  --radius: 0.75rem;
 
-  /* Replit Theme Colors */
+  /* Enhanced Replit Theme Colors */
   --replit-orange: hsl(18, 94%, 49%);
+  --replit-orange-light: hsl(18, 94%, 60%);
+  --replit-orange-dark: hsl(18, 94%, 40%);
   --navy-dark: hsl(220, 39%, 11%);
+  --navy-medium: hsl(220, 39%, 20%);
   --editor-dark: hsl(218, 23%, 17%);
   --accent-blue: hsl(200, 100%, 67%);
+  --accent-blue-light: hsl(200, 100%, 75%);
   --success-green: hsl(145, 100%, 41%);
+  --success-green-light: hsl(145, 100%, 50%);
+  --warning-yellow: hsl(45, 100%, 60%);
+  --error-red: hsl(0, 84%, 60%);
+  
+  /* Accessibility improvements */
+  --focus-ring: hsl(200, 100%, 67%);
+  --focus-ring-offset: 2px;
+  
+  /* Animation durations */
+  --duration-fast: 150ms;
+  --duration-normal: 250ms;
+  --duration-slow: 400ms;
 }
 
 .dark {
@@ -52,7 +69,6 @@
   --destructive: hsl(0, 62.8%, 30.6%);
   --destructive-foreground: hsl(0, 0%, 98%);
   --ring: hsl(240, 4.9%, 83.9%);
-  --radius: 0.5rem;
 }
 
 @layer base {
@@ -60,29 +76,219 @@
     @apply border-solid;
   }
 
+  html {
+    scroll-behavior: smooth;
+  }
+
   body {
     @apply font-sans antialiased;
     background-color: var(--background);
     color: var(--foreground);
-    font-family: 'Inter', sans-serif;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    line-height: 1.6;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
   
   .font-jetbrains {
-    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace;
+  }
+
+  /* Focus styles for accessibility */
+  *:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: var(--focus-ring-offset);
+    border-radius: calc(var(--radius) * 0.5);
+  }
+
+  /* Skip link for screen readers */
+  .skip-link {
+    position: absolute;
+    top: -40px;
+    left: 6px;
+    background: var(--primary);
+    color: var(--primary-foreground);
+    padding: 8px;
+    text-decoration: none;
+    border-radius: var(--radius);
+    z-index: 1000;
+    transition: top var(--duration-fast) ease;
+  }
+
+  .skip-link:focus {
+    top: 6px;
+  }
+
+  /* Improved readability */
+  h1, h2, h3, h4, h5, h6 {
+    line-height: 1.3;
+    font-weight: 600;
+    letter-spacing: -0.025em;
+  }
+
+  h1 {
+    @apply text-4xl md:text-5xl lg:text-6xl;
+  }
+
+  h2 {
+    @apply text-3xl md:text-4xl;
+  }
+
+  h3 {
+    @apply text-2xl md:text-3xl;
+  }
+
+  p {
+    @apply text-base md:text-lg;
+  }
+
+  /* Animation improvements */
+  .animate-fade-in {
+    animation: fadeIn var(--duration-normal) ease-out;
+  }
+
+  .animate-slide-up {
+    animation: slideUp var(--duration-normal) ease-out;
+  }
+
+  .animate-scale-in {
+    animation: scaleIn var(--duration-normal) ease-out;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes scaleIn {
+    from {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+}
+
+@layer components {
+  /* Enhanced button styles */
+  .btn-primary {
+    @apply bg-replit-orange hover:bg-replit-orange-dark text-white font-medium px-6 py-3 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 focus:ring-2 focus:ring-replit-orange focus:ring-offset-2;
+  }
+
+  .btn-secondary {
+    @apply bg-white hover:bg-gray-50 text-gray-900 border border-gray-200 font-medium px-6 py-3 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md;
+  }
+
+  .btn-ghost {
+    @apply hover:bg-gray-100 text-gray-700 font-medium px-4 py-2 rounded-md transition-colors duration-200;
+  }
+
+  /* Card enhancements */
+  .card-interactive {
+    @apply transition-all duration-200 hover:shadow-lg hover:-translate-y-1 cursor-pointer;
+  }
+
+  .card-feature {
+    @apply bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-lg transition-all duration-200 hover:-translate-y-1;
+  }
+
+  /* Gradient backgrounds */
+  .gradient-primary {
+    background: linear-gradient(135deg, var(--replit-orange) 0%, var(--replit-orange-dark) 100%);
+  }
+
+  .gradient-secondary {
+    background: linear-gradient(135deg, var(--accent-blue) 0%, var(--primary) 100%);
+  }
+
+  /* Loading states */
+  .loading-skeleton {
+    @apply animate-pulse bg-gray-200 rounded;
+  }
+
+  .loading-spinner {
+    @apply animate-spin rounded-full border-2 border-gray-200 border-t-replit-orange;
+  }
+
+  /* Improved form styles */
+  .form-input {
+    @apply w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-replit-orange focus:border-transparent transition-all duration-200 placeholder-gray-400;
+  }
+
+  .form-label {
+    @apply block text-sm font-medium text-gray-700 mb-2;
+  }
+
+  /* Status indicators */
+  .status-success {
+    @apply bg-success-green text-white;
+  }
+
+  .status-warning {
+    @apply bg-warning-yellow text-gray-900;
+  }
+
+  .status-error {
+    @apply bg-error-red text-white;
+  }
+
+  /* Navigation improvements */
+  .nav-link {
+    @apply px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 hover:bg-gray-100 focus:bg-gray-100;
+  }
+
+  .nav-link-active {
+    @apply bg-replit-orange text-white hover:bg-replit-orange-dark;
   }
 }
 
 @layer utilities {
+  /* Enhanced color utilities */
   .bg-replit-orange {
     background-color: var(--replit-orange);
+  }
+  
+  .bg-replit-orange-light {
+    background-color: var(--replit-orange-light);
+  }
+  
+  .bg-replit-orange-dark {
+    background-color: var(--replit-orange-dark);
   }
   
   .text-replit-orange {
     color: var(--replit-orange);
   }
   
+  .text-replit-orange-light {
+    color: var(--replit-orange-light);
+  }
+  
+  .border-replit-orange {
+    border-color: var(--replit-orange);
+  }
+  
   .bg-navy-dark {
     background-color: var(--navy-dark);
+  }
+  
+  .bg-navy-medium {
+    background-color: var(--navy-medium);
   }
   
   .bg-editor-dark {
@@ -104,20 +310,84 @@
   .bg-success-green {
     background-color: var(--success-green);
   }
-  
-  .border-replit-orange {
-    border-color: var(--replit-orange);
+
+  /* Spacing improvements */
+  .section-padding {
+    @apply py-16 md:py-24;
+  }
+
+  .container-padding {
+    @apply px-4 sm:px-6 lg:px-8;
+  }
+
+  /* Typography utilities */
+  .text-gradient {
+    background: linear-gradient(135deg, var(--replit-orange), var(--accent-blue));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Accessibility utilities */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  /* High contrast mode support */
+  @media (prefers-contrast: high) {
+    .bg-replit-orange {
+      background-color: hsl(18, 100%, 35%);
+    }
+    
+    .text-replit-orange {
+      color: hsl(18, 100%, 35%);
+    }
+  }
+
+  /* Reduced motion support */
+  @media (prefers-reduced-motion: reduce) {
+    * {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+    
+    html {
+      scroll-behavior: auto;
+    }
+  }
+
+  /* Dark mode improvements */
+  .dark .card-feature {
+    @apply bg-navy-medium border-gray-700;
+  }
+
+  .dark .form-input {
+    @apply bg-navy-medium border-gray-600 text-white placeholder-gray-400;
+  }
+
+  .dark .nav-link {
+    @apply hover:bg-navy-medium focus:bg-navy-medium;
+  }
+}
+
+/* Print styles */
+@media print {
+  .no-print {
+    display: none !important;
   }
   
-  .hover\:bg-replit-orange:hover {
-    background-color: var(--replit-orange);
-  }
-  
-  .hover\:border-replit-orange:hover {
-    border-color: var(--replit-orange);
-  }
-  
-  .focus\:ring-replit-orange:focus {
-    --tw-ring-color: var(--replit-orange);
+  * {
+    background: white !important;
+    color: black !important;
+    box-shadow: none !important;
   }
 }
