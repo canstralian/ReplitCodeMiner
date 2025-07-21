@@ -40,6 +40,8 @@ export default {
         accent: {
           DEFAULT: "var(--accent)",
           foreground: "var(--accent-foreground)",
+          blue: "var(--accent-blue)",
+          "blue-light": "var(--accent-blue-light)",
         },
         destructive: {
           DEFAULT: "var(--destructive)",
@@ -64,6 +66,29 @@ export default {
           "accent-foreground": "var(--sidebar-accent-foreground)",
           border: "var(--sidebar-border)",
           ring: "var(--sidebar-ring)",
+        },
+        // Replit theme colors
+        "replit-orange": {
+          DEFAULT: "var(--replit-orange)",
+          light: "var(--replit-orange-light)",
+          dark: "var(--replit-orange-dark)",
+        },
+        "navy": {
+          dark: "var(--navy-dark)",
+          medium: "var(--navy-medium)",
+        },
+        "editor": {
+          dark: "var(--editor-dark)",
+        },
+        "success": {
+          green: "var(--success-green)",
+          "green-light": "var(--success-green-light)",
+        },
+        "warning": {
+          yellow: "var(--warning-yellow)",
+        },
+        "error": {
+          red: "var(--error-red)",
         },
       },
       keyframes: {

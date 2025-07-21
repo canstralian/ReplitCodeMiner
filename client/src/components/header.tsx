@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
 import { useAuth } from "../hooks/useAuth";
+import { cn } from "../lib/utils";
 import { 
   Code2, 
   Settings, 

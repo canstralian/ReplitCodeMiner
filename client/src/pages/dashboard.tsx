@@ -84,7 +84,7 @@ export default function Dashboard() {
       <Header />
       
       <div className="flex">
-        {!isMobile && <Sidebar />}
+        {!isMobile && <Sidebar onRefresh={() => refetch()} />}
         
         <main className="flex-1 p-4 md:p-6 lg:p-8" role="main">
           {/* Page Header */}
@@ -322,7 +322,13 @@ export default function Dashboard() {
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {filteredProjects.map((project: any) => (
-                    <ProjectCard key={project.id} project={project} />
+                    <ProjectCard 
+                      key={project.id} 
+                      project={project}
+                      isSelected={false}
+                      onSelect={() => {}}
+                      viewMode="grid"
+                    />
                   ))}
                 </div>
               )}
