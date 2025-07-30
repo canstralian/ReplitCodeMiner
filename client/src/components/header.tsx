@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { Button } from "./ui/button";
@@ -71,7 +70,7 @@ export default function Header() {
           <Button variant="ghost" size="icon" aria-label="Help">
             <HelpCircle className="w-5 h-5" />
           </Button>
-          
+
           <Button variant="ghost" size="icon" aria-label="Notifications">
             <Bell className="w-5 h-5" />
           </Button>
@@ -147,7 +146,7 @@ export default function Header() {
                 </Button>
               </Link>
             ))}
-            
+
             <div className="pt-4 border-t space-y-2">
               <Link href="/profile" onClick={() => setIsMobileMenuOpen(false)}>
                 <Button variant="ghost" className="w-full justify-start">

@@ -15,6 +15,7 @@ import { taskadeService } from "./taskadeService";
 import { logger } from "./logger";
 import { z } from "zod";
 import AnalysisService from './analysisService';
+import { users, projects, userSettings, analyses, searchHistory } from "../shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Add performance monitoring
@@ -47,12 +48,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!userId) {
         return res.status(400).json({ message: "User ID not found" });
       }
-      
+
       const user = await storage.getUser(userId);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
-      
+
       res.json(user);
     } catch (error) {
       console.error("Error fetching user:", error);
@@ -67,12 +68,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!userId) {
         return res.status(400).json({ message: "User ID not found" });
       }
-      
+
       const user = await storage.getUser(userId);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
-      
+
       // Return sanitized profile data
       const profileData = {
         id: user.id,
@@ -85,7 +86,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         fullName: `${user.firstName || ''} ${user.lastName || ''}`.trim(),
         initials: `${user.firstName?.charAt(0) || ''}${user.lastName?.charAt(0) || ''}`.toUpperCase(),
       };
-      
+
       res.json(profileData);
     } catch (error) {
       console.error("Error fetching profile:", error);
@@ -172,12 +173,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           userId: req.user?.claims?.sub,
           projectIds: req.body?.projectIds
         });
-        
+
         await taskadeService.notifyError("Project analysis failed", { 
           userId: req.user?.claims?.sub, 
           error: error instanceof Error ? error.message : String(error)
         });
-        
+
         res.status(500).json({ message: "Failed to analyze projects" });
       }
     }
@@ -245,7 +246,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     async (req: any, res) => {
       try {
         const { title, description, status, metadata } = req.body;
-        
+
         const success = await taskadeService.sendNotification({
           title,
           description,
@@ -267,9 +268,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/taskade/task', isAuthenticated, async (req: any, res) => {
     try {
       const { title, description, assignee } = req.body;
-      
+
       const success = await taskadeService.createTask(title, description, assignee);
-      
+
       res.json({ success, message: success ? 'Task created' : 'Failed to create task' });
     } catch (error) {
       console.error("Error creating Taskade task:", error);
@@ -284,7 +285,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!userId) {
         return res.status(400).json({ message: "User ID not found" });
       }
-      
+
       const settings = await storage.getUserSettings(userId);
       res.json(settings);
     } catch (error) {
@@ -302,14 +303,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!userId) {
         return res.status(400).json({ message: "User ID not found" });
       }
-      
+
       const settings = req.body;
-      
+
       // Basic validation
       if (!settings || typeof settings !== 'object') {
         return res.status(400).json({ message: "Invalid settings data" });
       }
-      
+
       await storage.updateUserSettings(userId, settings);
       res.json({ message: "Settings updated successfully" });
     } catch (error) {
@@ -330,6 +331,111 @@ export async function registerRoutes(app: Express): Promise<Server> {
       memory: process.memoryUsage(),
       issues: health.issues
     });
+  });
+  
+  // Analytics endpoint
+  app.get("/api/analytics", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+
+      // Return dummy analytics data for now
+      const analytics = {
+        totalProjects: 0,
+        totalDuplicates: 0,
+        averageQualityScore: 85,
+        recentActivity: []
+      };
+
+      res.json(analytics);
+    } catch (error) {
+      logger.error("Analytics error:", error);
+      res.status(500).json({ error: "Failed to fetch analytics" });
+    }
+  });
+
+  // Search endpoint
+  app.post("/api/search", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      const { query, language, patternType } = req.body;
+
+      if (!query || !query.trim()) {
+        return res.status(400).json({ error: "Search query is required" });
+      }
+
+      const searchResults = await storage.searchCodePatterns(userId, {
+        query,
+        language,
+        patternType
+      });
+
+      res.json(searchResults);
+    } catch (error) {
+      logger.error("Search error:", error);
+      res.status(500).json({ error: "Failed to perform search" });
+    }
+  });
+
+  // Recent searches endpoints
+  app.get("/api/recent-searches", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+
+      // TODO: fetch the recent searches
+      const searches: any[] = [];
+
+      res.json(searches);
+    } catch (error) {
+      logger.error("Recent searches error:", error);
+      res.status(500).json({ error: "Failed to fetch recent searches" });
+    }
+  });
+
+  app.post("/api/recent-searches", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      const { query, type } = req.body;
+
+      if (!query || !query.trim()) {
+        return res.status(400).json({ error: "Search query is required" });
+      }
+
+      // TODO: Save search to DB
+      const results: any[] = [];
+
+      res.json({ success: true, results });
+    } catch (error) {
+      logger.error("Save search error:", error);
+      res.status(500).json({ error: "Failed to save search" });
+    }
+  });
+
+  app.delete("/api/recent-searches/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      const searchId = req.params.id;
+
+      // TODO: implement the deletion logic
+      const results: any[] = [];
+
+      res.json({ success: true, results });
+    } catch (error) {
+      logger.error("Delete search error:", error);
+      res.status(500).json({ error: "Failed to delete search" });
+    }
+  });
+
+  app.delete("/api/recent-searches", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      // TODO: implement the deletion logic
+      const results: any[] = [];
+
+      res.json({ success: true, results });
+    } catch (error) {
+      logger.error("Clear searches error:", error);
+      res.status(500).json({ error: "Failed to clear search history" });
+    }
   });
 
   // Global error handler

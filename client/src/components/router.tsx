@@ -5,6 +5,8 @@ import Dashboard from "../pages/dashboard";
 import Signup from "../pages/signup";
 import NotFound from "../pages/not-found";
 import Settings from "../pages/settings";
+import Search from "../pages/search";
+import RecentSearches from "../pages/recent-searches";
 
 export default function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -31,6 +33,8 @@ export default function Router() {
   return (
     <Switch>
       <Route path="/" component={Dashboard} />
+      <Route path="/search" component={Search} />
+      <Route path="/recent-searches" component={RecentSearches} />
       <Route path="/settings" component={Settings} />
       <Route component={NotFound} />
     </Switch>

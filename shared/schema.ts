@@ -1,6 +1,7 @@
-import { pgTable, text, integer, timestamp, varchar, boolean, decimal } from "drizzle-orm/pg-core";
+import { pgTable, text, integer, timestamp, varchar, boolean, decimal, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
+import { sql } from "drizzle-orm";
 
 export const users = pgTable("users", {
   id: text("id").primaryKey(),
@@ -58,6 +59,26 @@ export const sessions = pgTable("sessions", {
   sid: varchar("sid").primaryKey(),
   sess: text("sess").notNull(),
   expire: timestamp("expire").notNull(),
+});
+
+export const analyses = pgTable("analyses", {
+  id: text("id").primaryKey(),
+  projectId: text("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
+  status: text("status").notNull().default("pending"),
+  results: jsonb("results"),
+  duplicateCount: integer("duplicate_count").default(0),
+  startedAt: timestamp("started_at").defaultNow(),
+  completedAt: timestamp("completed_at"),
+});
+
+export const searchHistory = pgTable("search_history", {
+  id: text("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  query: text("query").notNull(),
+  type: text("type").notNull().default("code"),
+  filters: jsonb("filters"),
+  resultsCount: integer("results_count").default(0),
+  timestamp: timestamp("timestamp").defaultNow(),
 });
 
 // Enhanced Zod schemas with validation
