@@ -81,6 +81,18 @@ export const searchHistory = pgTable("search_history", {
   timestamp: timestamp("timestamp").defaultNow(),
 });
 
+export const userSettings = pgTable("user_settings", {
+  id: text("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: text("user_id").notNull().unique().references(() => users.id, { onDelete: "cascade" }),
+  theme: text("theme").default("dark"),
+  analysisThreshold: decimal("analysis_threshold", { precision: 3, scale: 2 }).default("0.80"),
+  autoRefresh: boolean("auto_refresh").default(false),
+  notifications: boolean("notifications").default(true),
+  maxFileSize: integer("max_file_size").default(1048576),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Enhanced Zod schemas with validation
 export const insertUserSchema = createInsertSchema(users, {
   email: z.string().email("Invalid email format"),
@@ -127,8 +139,18 @@ export const searchRequestSchema = z.object({
   patternType: z.enum(['function', 'class', 'import', 'component', 'hook', 'api_call']).optional()
 });
 
-export const userSettingsSchema = z.object({
+export const insertUserSettingsSchema = createInsertSchema(userSettings, {
   theme: z.enum(['light', 'dark']).default('dark'),
+  analysisThreshold: z.string().regex(/^\d+\.\d{2}$/, "Invalid threshold format").default("0.80"),
+  autoRefresh: z.boolean().default(false),
+  notifications: z.boolean().default(true),
+  maxFileSize: z.number().int().min(1024).max(10485760).default(1048576)
+});
+
+export const selectUserSettingsSchema = createSelectSchema(userSettings);
+
+export const userSettingsSchema = z.object({
+  theme: z.enum(['light', 'dark']).default('dark'),  
   analysisThreshold: z.number().min(0.1).max(1.0).default(0.8),
   autoRefresh: z.boolean().default(false),
   notifications: z.boolean().default(true),
@@ -143,3 +165,5 @@ export type CodePattern = typeof codePatterns.$inferSelect;
 export type InsertCodePattern = typeof codePatterns.$inferInsert;
 export type DuplicateGroup = typeof duplicateGroups.$inferSelect;
 export type InsertDuplicateGroup = typeof duplicateGroups.$inferInsert;
+export type UserSettings = typeof userSettings.$inferSelect;
+export type InsertUserSettings = typeof userSettings.$inferInsert;

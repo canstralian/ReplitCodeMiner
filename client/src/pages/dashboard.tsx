@@ -72,7 +72,13 @@ export default function Dashboard() {
 
   const stats = {
     totalProjects: projects.length,
-    totalDuplicates: projects.reduce((sum: number, p: any) => sum + (p.duplicateCount || 0), 0),
+    duplicatesFound: projects.reduce((sum: number, p: any) => sum + (p.duplicateCount || 0), 0),
+    similarPatterns: projects.filter((p: any) => p.duplicateCount > 0).length,
+    languages: projects.reduce((acc: Record<string, number>, p: any) => {
+      const lang = p.language || 'unknown';
+      acc[lang] = (acc[lang] || 0) + 1;
+      return acc;
+    }, {}),
     recentlyAnalyzed: projects.filter((p: any) => 
       new Date(p.lastAnalyzed) > new Date(Date.now() - 24 * 60 * 60 * 1000)
     ).length,
@@ -84,7 +90,13 @@ export default function Dashboard() {
       <Header />
       
       <div className="flex">
-        {!isMobile && <Sidebar onRefresh={() => refetch()} />}
+        {!isMobile && (
+          <Sidebar 
+            stats={stats} 
+            duplicates={filteredProjects.filter((p: any) => p.duplicateCount > 0)} 
+            onRefresh={() => refetch()} 
+          />
+        )}
         
         <main className="flex-1 p-4 md:p-6 lg:p-8" role="main">
           {/* Page Header */}
@@ -157,7 +169,7 @@ export default function Dashboard() {
                     <AlertTriangle className="h-4 w-4 text-warning-yellow" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold text-gray-900">{stats.totalDuplicates}</div>
+                    <div className="text-2xl font-bold text-gray-900">{stats.duplicatesFound}</div>
                     <p className="text-xs text-gray-600 mt-1">
                       Requiring attention
                     </p>
