@@ -36,8 +36,9 @@ A powerful tool for detecting duplicate code patterns across your Replit project
 
 ### Development Setup
 
-1. **Clone the repository**
+1. **Fork this Repl** or **Clone the repository**
    ```bash
+   # If cloning from GitHub (replace with actual repo URL)
    git clone https://github.com/your-username/replit-duplicate-detector.git
    cd replit-duplicate-detector
    ```

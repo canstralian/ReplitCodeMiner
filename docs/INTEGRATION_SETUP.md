@@ -1,7 +1,9 @@
 
 # Integration Setup Guide
 
-This guide explains how to set up GitHub Actions CI/CD, Replit Workflows, and Taskade integration.
+This guide explains how to set up GitHub Actions CI/CD, Replit Workflows, and Taskade integration for the Replit Duplicate Detector Extension.
+
+> **Note**: This guide assumes you have a GitHub repository connected to your Repl. Some integrations are optional and can be skipped for basic usage.
 
 ## GitHub Actions Setup
 
