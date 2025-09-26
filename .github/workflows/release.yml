@@ -1,0 +1,130 @@
+
+name: Release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      release_type:
+        description: 'Release type'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+
+jobs:
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    if: "!contains(github.event.head_commit.message, 'chore: release')"
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+      - name: Build application
+        run: npm run build
+
+      - name: Determine release type
+        id: release-type
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "type=${{ github.event.inputs.release_type }}" >> $GITHUB_OUTPUT
+          else
+            # Auto-determine based on commit messages since last tag
+            if git log $(git describe --tags --abbrev=0)..HEAD --oneline | grep -q "feat!:\|fix!:\|BREAKING CHANGE"; then
+              echo "type=major" >> $GITHUB_OUTPUT
+            elif git log $(git describe --tags --abbrev=0)..HEAD --oneline | grep -q "feat:"; then
+              echo "type=minor" >> $GITHUB_OUTPUT
+            else
+              echo "type=patch" >> $GITHUB_OUTPUT
+            fi
+          fi
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          # Generate changelog since last tag
+          LAST_TAG=$(git describe --tags --abbrev=0)
+          CHANGELOG=$(git log ${LAST_TAG}..HEAD --oneline --grep="feat:" --grep="fix:" --grep="perf:" --pretty=format:"- %s")
+          echo "changelog<<EOF" >> $GITHUB_OUTPUT
+          echo "$CHANGELOG" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Bump version
+        id: version
+        run: |
+          NEW_VERSION=$(npm version ${{ steps.release-type.outputs.type }} --no-git-tag-version)
+          echo "version=${NEW_VERSION}" >> $GITHUB_OUTPUT
+
+      - name: Update changelog file
+        run: |
+          DATE=$(date +%Y-%m-%d)
+          VERSION=${{ steps.version.outputs.version }}
+          
+          # Create changelog entry
+          cat > temp_changelog.md << EOF
+          ## [${VERSION}] - ${DATE}
+          
+          ${{ steps.changelog.outputs.changelog }}
+          
+          EOF
+          
+          # Prepend to existing changelog
+          if [ -f CHANGELOG.md ]; then
+            cat temp_changelog.md CHANGELOG.md > new_changelog.md
+            mv new_changelog.md CHANGELOG.md
+          else
+            mv temp_changelog.md CHANGELOG.md
+          fi
+
+      - name: Commit and push changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add package.json package-lock.json CHANGELOG.md
+          git commit -m "chore: release ${{ steps.version.outputs.version }}"
+          git tag ${{ steps.version.outputs.version }}
+          git push origin main --tags
+
+      - name: Create GitHub Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.version.outputs.version }}
+          release_name: Release ${{ steps.version.outputs.version }}
+          body: |
+            ## Changes
+            
+            ${{ steps.changelog.outputs.changelog }}
+            
+            ## Installation
+            
+            ```bash
+            git clone https://github.com/${{ github.repository }}.git
+            cd replit-duplicate-detector
+            npm install
+            npm run build
+            ```
+          draft: false
+          prerelease: false
