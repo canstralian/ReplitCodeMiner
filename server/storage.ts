@@ -595,11 +595,19 @@ class StorageService {
   }
 
   private invalidateProjectsCache(userId: string): void {
+    if (!userId) {
+      logger.error('Cannot invalidate cache: userId is required');
+      return;
+    }
     this.invalidateCache(`projects:${userId}`);
     this.invalidateCache(`stats:${userId}`);
   }
 
   private invalidateAnalysisCache(userId: string): void {
+    if (!userId) {
+      logger.error('Cannot invalidate cache: userId is required');
+      return;
+    }
     this.invalidateCache(`duplicates:${userId}`);
     this.invalidateCache(`search:${userId}`);
     this.invalidateCache(`stats:${userId}`);

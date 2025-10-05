@@ -191,7 +191,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const duplicates = await storage.getUserDuplicates(userId);
       res.json(duplicates);
     } catch (error) {
-      console.error("Error fetching duplicates:", error);
+      logger.error('Error fetching duplicates:', {
+        userId: req.user?.claims?.sub,
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined
+      });
       res.status(500).json({ message: "Failed to fetch duplicates" });
     }
   });

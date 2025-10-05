@@ -115,6 +115,10 @@ export class AnalysisService {
       try {
         // Skip empty or very large files
         if (!file.content || file.content.length > 1024 * 1024) {
+          logger.warn('Skipping file due to size constraints', {
+            filePath: file.filePath,
+            size: file.content?.length || 0
+          });
           continue;
         }
 
