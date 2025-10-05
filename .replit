@@ -81,3 +81,6 @@ args = "npm run build"
 [[ports]]
 localPort = 5000
 externalPort = 80
+
+[agent]
+integrations = ["javascript_stripe:1.0.0"]
