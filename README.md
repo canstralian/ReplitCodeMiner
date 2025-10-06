@@ -150,7 +150,7 @@ We maintain >80% code coverage across all modules. Coverage reports are generate
 - `GET /api/settings` - Get user settings
 - `PUT /api/settings` - Update user settings
 
-For detailed API documentation, visit `/api/docs` when running the application.
+For detailed API documentation, see [API Documentation](docs/API.md).
 
 ## 🔒 Security
 
@@ -158,10 +158,23 @@ This application implements multiple security layers:
 
 - **Authentication**: Secure OAuth2 integration with Replit
 - **Authorization**: Role-based access control
-- **Input Validation**: Comprehensive input sanitization using Zod
-- **Rate Limiting**: API rate limiting to prevent abuse
+- **Input Validation**: Comprehensive input sanitization using Zod schemas
+- **Rate Limiting**: Configurable API rate limiting (100 req/min default)
 - **Security Headers**: CSRF, XSS, and clickjacking protection
+- **ReDoS Prevention**: Protected regex patterns with match limits
+- **File Size Limits**: 500KB max per file, 5MB for uploads
 - **HTTPS**: Enforced in production with secure cookies
+- **Audit Logging**: Comprehensive logging for security events
+
+For detailed security information, see [Security Documentation](docs/SECURITY.md).
+
+### Pattern Detection Security
+
+- **Algorithm Documentation**: [Pattern Detection](docs/PATTERN_DETECTION.md)
+- **Complexity Limits**: Capped at reasonable values to prevent DoS
+- **Memory Constraints**: LRU caching with size limits
+- **Timeout Protection**: Analysis timeouts to prevent hanging
+- **Input Sanitization**: File path validation to prevent traversal attacks
 
 ## 🤝 Contributing
 
