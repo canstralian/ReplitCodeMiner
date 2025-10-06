@@ -37,6 +37,7 @@ A powerful tool for detecting duplicate code patterns across your Replit project
 ### Development Setup
 
 1. **Fork this Repl** or **Clone the repository**
+
    ```bash
    # If cloning from GitHub (replace with actual repo URL)
    git clone https://github.com/your-username/replit-duplicate-detector.git
@@ -44,17 +45,20 @@ A powerful tool for detecting duplicate code patterns across your Replit project
    ```
 
 2. **Install dependencies**
+
    ```bash
    npm install
    ```
 
 3. **Environment Setup**
+
    ```bash
    cp .env.example .env
    # Edit .env with your configuration
    ```
 
 4. **Database Setup**
+
    ```bash
    npm run db:push
    ```
@@ -69,11 +73,13 @@ The application will be available at `http://localhost:5000`
 ### Production Deployment
 
 1. **Build for Production**
+
    ```bash
    npm run build
    ```
 
 2. **Start Production Server**
+
    ```bash
    npm run start
    ```
@@ -106,20 +112,21 @@ The application will be available at `http://localhost:5000`
 
 ### Environment Variables
 
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `DATABASE_URL` | PostgreSQL connection string | Yes |
-| `REPLIT_CLIENT_ID` | Replit OAuth2 client ID | Yes |
-| `REPLIT_CLIENT_SECRET` | Replit OAuth2 client secret | Yes |
-| `SESSION_SECRET` | Session encryption secret | Yes |
-| `NODE_ENV` | Environment (development/production) | No |
-| `PORT` | Server port (default: 5000) | No |
+| Variable               | Description                          | Required |
+| ---------------------- | ------------------------------------ | -------- |
+| `DATABASE_URL`         | PostgreSQL connection string         | Yes      |
+| `REPLIT_CLIENT_ID`     | Replit OAuth2 client ID              | Yes      |
+| `REPLIT_CLIENT_SECRET` | Replit OAuth2 client secret          | Yes      |
+| `SESSION_SECRET`       | Session encryption secret            | Yes      |
+| `NODE_ENV`             | Environment (development/production) | No       |
+| `PORT`                 | Server port (default: 5000)          | No       |
 
 See `.env.example` for complete configuration options.
 
 ## 🧪 Testing
 
 ### Run Tests
+
 ```bash
 # Run all tests
 npm test
@@ -132,21 +139,25 @@ npm run test:watch
 ```
 
 ### Test Coverage
+
 We maintain >80% code coverage across all modules. Coverage reports are generated in `coverage/` directory.
 
 ## 📊 API Documentation
 
 ### Authentication Endpoints
+
 - `GET /api/auth/user` - Get current user
 - `GET /api/login` - Initiate OAuth login
 - `POST /api/logout` - Logout user
 
 ### Project Analysis
+
 - `GET /api/projects` - List user projects
 - `POST /api/projects/:id/analyze` - Analyze project for duplicates
 - `GET /api/projects/:id/results` - Get analysis results
 
 ### Settings
+
 - `GET /api/settings` - Get user settings
 - `PUT /api/settings` - Update user settings
 
@@ -161,7 +172,10 @@ This application implements multiple security layers:
 - **Input Validation**: Comprehensive input sanitization using Zod
 - **Rate Limiting**: API rate limiting to prevent abuse
 - **Security Headers**: CSRF, XSS, and clickjacking protection
+- **CORS Protection**: Strict CORS policy prevents unauthorized cross-origin access
 - **HTTPS**: Enforced in production with secure cookies
+
+For detailed security information, including development server best practices, see [SECURITY.md](docs/SECURITY.md).
 
 ## 🤝 Contributing
 
