@@ -7,9 +7,11 @@ import { Input } from "../components/ui/input";
 import { Badge } from "../components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
+import { useToast } from "../hooks/use-toast";
 import Header from "../components/header";
 import Sidebar from "../components/sidebar";
 import { useIsMobile } from "../hooks/use-mobile";
+import { exportToJSON, exportToCSV } from "../lib/exportUtils";
 import { 
   Search as SearchIcon, 
   Filter, 
@@ -20,7 +22,8 @@ import {
   CheckCircle,
   Zap,
   Copy,
-  ExternalLink
+  ExternalLink,
+  Download
 } from "lucide-react";
 
 interface SearchResult {
@@ -45,6 +48,7 @@ export default function Search() {
   const [isSearching, setIsSearching] = useState(false);
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const isMobile = useIsMobile();
+  const { toast } = useToast();
 
   const { data: recentSearches = [] } = useQuery({
     queryKey: ["recent-searches"],
@@ -96,6 +100,10 @@ export default function Search() {
 
   const copyCode = (content: string) => {
     navigator.clipboard.writeText(content);
+    toast({
+      title: "Code copied!",
+      description: "Code snippet copied to clipboard",
+    });
   };
 
   return (
@@ -220,6 +228,36 @@ export default function Search() {
                     <h3 className="text-lg font-semibold text-gray-900">
                       Found {searchResults.length} results for "{searchTerm}"
                     </h3>
+                    <div className="flex gap-2">
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => {
+                          exportToJSON(searchResults, `search-results-${Date.now()}.json`);
+                          toast({
+                            title: "Exported successfully!",
+                            description: "Search results exported as JSON",
+                          });
+                        }}
+                      >
+                        <Download className="w-4 h-4 mr-2" />
+                        Export JSON
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => {
+                          exportToCSV(searchResults, `search-results-${Date.now()}.csv`);
+                          toast({
+                            title: "Exported successfully!",
+                            description: "Search results exported as CSV",
+                          });
+                        }}
+                      >
+                        <Download className="w-4 h-4 mr-2" />
+                        Export CSV
+                      </Button>
+                    </div>
                   </div>
 
                   {searchResults.map((result) => (

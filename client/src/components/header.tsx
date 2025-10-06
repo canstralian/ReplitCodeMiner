@@ -11,6 +11,7 @@ import {
 } from "./ui/dropdown-menu";
 import { useAuth } from "../hooks/useAuth";
 import { cn } from "../lib/utils";
+import { KeyboardShortcutsDialog } from "./keyboard-shortcuts-dialog";
 import { 
   Code2, 
   Settings, 
@@ -20,13 +21,15 @@ import {
   X,
   Search,
   Bell,
-  HelpCircle
+  HelpCircle,
+  Keyboard
 } from "lucide-react";
 
 export default function Header() {
   const [location] = useLocation();
   const { user, logout } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [showShortcuts, setShowShortcuts] = useState(false);
 
   const navigationItems = [
     { href: "/", label: "Dashboard", icon: Code2 },
@@ -67,6 +70,10 @@ export default function Header() {
 
         {/* Desktop User Menu */}
         <div className="hidden md:flex items-center space-x-4">
+          <Button variant="ghost" size="icon" aria-label="Keyboard Shortcuts" onClick={() => setShowShortcuts(true)}>
+            <Keyboard className="w-5 h-5" />
+          </Button>
+
           <Button variant="ghost" size="icon" aria-label="Help">
             <HelpCircle className="w-5 h-5" />
           </Button>
@@ -74,6 +81,8 @@ export default function Header() {
           <Button variant="ghost" size="icon" aria-label="Notifications">
             <Bell className="w-5 h-5" />
           </Button>
+          
+          <KeyboardShortcutsDialog open={showShortcuts} onOpenChange={setShowShortcuts} />
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
