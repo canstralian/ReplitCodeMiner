@@ -17,6 +17,6 @@ afterAll(async () => {
   try {
     await db.$client.end();
   } catch (error) {
-    console.error('Error closing database connection:', error);
+    console.error('Error closing database connection during test cleanup:', error);
   }
 });
